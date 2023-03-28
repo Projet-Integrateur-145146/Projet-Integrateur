@@ -66,18 +66,10 @@ PROJET FINAL
 
 * Fin transmission = éteindre DEL 
 
-</br>
-+----------+---------------+</br>
-| 0x02     | Debut du text |</br>
-+----------+---------------+</br> 
-| 0x03     | Fin du texte  |</br>
-+----------+---------------+</br> 
-| 0x04     |Fin de la trans|</br>
-+----------+---------------+</br>
-
-| Column 1 | Column 2 | Column 3 |
-| -------- | -------- | -------- |
-| Row 1, Column 1 | Row 1, Column 2 | Row 1, Column 3 |
-| Row 2, Column 1 | Row 2, Column 2 | Row 2, Column 3 |
+| Byte | Explication |
+| -------- | -------- |
+| 0x02 | Debut du texte |
+| 0x03 | Fin du texte | 
+| 0x04 | Fin de la transmission|
 
  
