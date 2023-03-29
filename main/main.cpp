@@ -1,4 +1,5 @@
 #include "main.hpp"
+#include "../Detection/detection.hpp"
 
 // INTERRUPT = PC4 ou 5
 // BLANC = PC6
@@ -20,9 +21,7 @@ Robot detectState(){
     return robot;
 }
 
-void executeDetectionState(){
 
-}
 
 void executeTransmissionState(){
 
