@@ -30,7 +30,8 @@ void executeTransmissionState(){
 int main(){
     Robot robot = detectState();
     if (robot == Robot::DETECTION){
-        executeDetectionState();
+        Detection detect;
+        detect.executeDetectionState();
     }
     else{
         executeTransmissionState();
