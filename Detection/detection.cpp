@@ -69,40 +69,44 @@ uint8_t Detection::findPole(){
     // char space[2] = " ";
     DDRA &= ~(1 << PA3); // configure le port PD3 en mode entrée
     while(true){
-         _delay_ms(LECTURE_DELAY);
+        _delay_ms(LECTURE_DELAY);
         value = can.lecture(pos);
         value = value >> 2 ;
-        // char buffer[6]; // As uint16_t is maximum 5 characters, plus one for the null terminator
-        // char buff[100];
+        //char buffer[6]; // As uint16_t is maximum 5 characters, plus one for the null terminator
+        char buff[100];
         // sprintf(buffer, "%u ", value);
         // const char* str_value = buffer;
         // _delay_ms(WAIT);
         // printDebug(str_value);
-        if((value > 20) && (value < 30 )){
-            // sprintf(buff,"Robot à 2 poteaux diagonale");
+        _delay_ms(10);
+        if((value > 15) && (value < 18 )){
+            // sprintf(buff,"Robot à 2 poteaux diagonale %u\n",value);
             // const char* str_pot = buff;
-            // printDebug(buff);
+            // printDebug(str_pot);
             return 2;
         }
-        else if((value > 30) && (value < 40)){
-            // sprintf(buff,"Robot à 2 poteaux tout droit");
+        else if((value > 23) && (value < 27)){
+            // sprintf(buff,"Robot à 2 poteaux tout droit%u\n",value);
             // const char* str_pot = buff;
-            // printDebug(buff);
+            // printDebug(str_pot);
             return 2;
         }
-        else if((value > 80) && (value < 130 )){
-            // sprintf(buff,"Robot à 1 poteau tout droit");
+        else if((value > 90)){
+            // sprintf(buff,"Robot à 1 poteau tout droit%u\n",value);
             // const char* str_pot = buff;
-            // printDebug(buff);
+            // printDebug(str_pot);
             return 1;
         }
-        else if((value > 50) && (value < 60)){
-            // sprintf(buff,"Robot à 1 poteau diagonale");
+        else if((value > 46) && (value < 50)){
+            // sprintf(buff,"Robot à 1 poteau diagonale%u\n",value);
             // const char* str_pot = buff;
-            // printDebug(buff);
+            // printDebug(str_pot);
             return 1;
         }
         // printDebug(space);
+        // sprintf(buff,"Robot à 2 poteaux diagonale %u\n",value);
+        // const char* str_pot = buff;
+        // printDebug(str_pot);
     }
 }
 
@@ -114,6 +118,14 @@ void Detection::searchPole(){
     // Trouve Pole - Doit retourner la distance au pole (1 ou 2)
     // Sauvegarde position Pole
     // Avance vers Pole
+    char buffer[6];
+    for (uint8_t i = 0; i<32; i++){
+        sprintf(buffer, "%u ", positionWithPole_[i]);
+        const char* str_value = buffer;
+        _delay_ms(10);
+        printDebug(str_value);
+        _delay_ms(10);
+    }
 }
 
 void Detection::executeDetectionState(){
