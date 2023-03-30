@@ -1,4 +1,9 @@
 #include "detection.hpp"
-void executeDetectionState(){
-    int x =10;
+
+void Detection::executeDetectionState(){
+    //waitFacingDirection();
+};
+
+Detection::Detection(){
+    nbPoles_ = 0;
 };
