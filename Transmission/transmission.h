@@ -1,11 +1,25 @@
 #include <iostream>
 #include <fstream>
-#include <set>
+#include <string.h>
 
 #define SIZE_DATA 32
 #define GAP_CIRCLES_X 106
 #define GAP_CIRCLES_Y 96
 #define HEIGHT 576 
+
+struct CustomPair {
+    float first;
+    float second;
+
+    friend bool operator==(const CustomPair a, const CustomPair b) {
+        return a.first == b.first && a.second == b.second;
+    }
+
+    friend bool operator<(const CustomPair a, const CustomPair b) {
+        return a.first < b.first || a.second < b.second; 
+    }
+};
+
 
 class Transmission
 {
@@ -13,43 +27,49 @@ public:
     Transmission() {
         // Valeurs pour tester 
         data[0] = 1;
-        data[1] = 1; 
-        data[8] = 1;  
-
-        // Il faudra lire les données au début 
-        //std::pair<int, int>* arrayOfPairs = new std::pair<int, int>[3]; 
+        data[2] = 1; 
+        data[16] = 1;  
+        data[18] = 1;   
     }; 
     ~Transmission() { delete[] data; }
 
+    int returnValue(CustomPair p1, CustomPair p2, CustomPair p) {
+        return  (p.second - p1.second) * (p2.first - p1.first) -
+                (p2.second - p1.second) * (p.first - p1.first);
+    }
+
     // Returns the side of point p with respect to line
     // joining points p1 and p2.
-    int findSide(std::pair<int, int> p1, std::pair<int, int> p2, std::pair<int, int> p)
+    float findSide(CustomPair p1, CustomPair p2, CustomPair p)
     {
-        int val = (p.second - p1.second) * (p2.first - p1.first) -
-                (p2.second - p1.second) * (p.first - p1.first);
-    
-        if (val > 0)
-            return 1;
-        if (val < 0)
-            return -1;
-        return 0;
+        float val = returnValue(p1, p2, p);
+        return val > 0 ? 1 : (val < 0 ? -1 : 0);
     }
     
     // returns a value proportional to the distance
     // between the point p and the line joining the
     // points p1 and p2
-    int lineDist(std::pair<int, int> p1, std::pair<int, int> p2, std::pair<int, int> p)
+    int lineDist(CustomPair p1, CustomPair p2, CustomPair p)
     {
-        return abs ((p.second - p1.second) * (p2.first - p1.first) -
-                (p2.second - p1.second) * (p.first - p1.first));
+        return abs(returnValue(p1, p2, p));
     }
     
+
+    bool checkIfExist(CustomPair hull[], CustomPair p) {
+        for (int i = 0; i < nElementsHull; i++) {
+                if (p == hull[i]) 
+                    return true; 
+            }
+        return false; 
+    }
+
+
     // End points of line L are p1 and p2. side can have value
     // 1 or -1 specifying each of the parts made by the line L
-    void quickHull(std::pair<int, int> a[], int n, std::pair<int, int> p1, std::pair<int, int> p2, int side)
+    void quickHull(CustomPair a[], int n, CustomPair p1, CustomPair p2, int side)
     {
         int ind = -1;
-        int max_dist = 0;
+        float max_dist = 0;
     
         // finding the point with maximum distance
         // from L and also on the specified side of L.
@@ -67,8 +87,10 @@ public:
         // of L to the convex hull.
         if (ind == -1)
         {
-            hull.insert(p1);
-            hull.insert(p2);
+            if (!checkIfExist(hull, p1)) 
+                hull[nElementsHull++] = p1; 
+            if (!checkIfExist(hull, p2))
+                hull[nElementsHull++] = p2;
             return;
         }
     
@@ -77,15 +99,8 @@ public:
         quickHull(a, n, a[ind], p2, -findSide(a[ind], p2, p1));
     }
     
-    void printHull(std::pair<int, int> a[], int n)
-    {
-        // a[i].second -> y-coordinate of the ith point
-        if (n < 3)
-        {
-            std::cout << "Convex hull not possible\n";
-            return;
-        }
-    
+    void printHull(CustomPair a[], int n)
+    {    
         // Finding the point with minimum and
         // maximum x-coordinate
         int min_x = 0, max_x = 0;
@@ -106,27 +121,36 @@ public:
         // other side of line joining a[min_x] and
         // a[max_x]
         quickHull(a, n, a[min_x], a[max_x], -1);
-    
-        std::cout << "The points in Convex Hull are:\n";
-        while (!hull.empty())
-        {
-            std::cout << "(" <<( *hull.begin()).first << ", "
-                << (*hull.begin()).second << ") ";
-            hull.erase(hull.begin());
+
+        std::cout << nElementsHull;
+        for (int i = 0; i < nElementsHull; i++) {
+            std::cout << "(" << hull[i].first << ", "
+            << hull[i].second << ") ";
         }
     }
 
-    std::pair<float, float> calculatePos(int index) {
+    CustomPair calculatePos(int index) {
         int posX = index % 8; 
         int posY = index / 8;  
-        std::pair<float, float> t = std::make_pair(xInit + (GAP_CIRCLES_X * (posX + 1)), HEIGHT - (yInit + (GAP_CIRCLES_Y * (posY + 1)))); 
-
-        std::pair<int, int> p = std::make_pair(posX, posY); 
-        arrayOfPairs[compteurPair++] = p; 
+        CustomPair t;
+        t.first = xInit + (GAP_CIRCLES_X * (posX + 1));
+        t.second = HEIGHT - (yInit + (GAP_CIRCLES_Y * (posY + 1)));
+        arrayOfPairs[compteurPair++] = t; 
         return t; 
     }
 
-    std::string generateLines() {return "";}
+    std::string fillLines() {
+        std::string svgData = "<polygon points=\""; 
+        for (int i = 0; i < nElementsHull; i++) {
+            svgData += std::to_string(hull[i].first) + "," + std::to_string(hull[i].second) + " "; // "308,144 934,144 308,336";
+        }
+        svgData += "\" stroke=\"black\" stroke-width=\"4\" fill=\"green\"/>";
+        return svgData; 
+    }
+
+    std::string generateLines() {
+        return fillLines(); 
+    }
 
     // Generates circles on the board if they are detected by the robot
     std::string generateCircles() {
@@ -134,8 +158,8 @@ public:
 
         for (int index = 0; index < SIZE_DATA; index++) {
             if (data[index] == 1) {
-                std::pair<float, float> t = calculatePos(index);
-                svgData += "<circle cx=\"" + std::to_string(t.first) + "\" cy=\"" + std::to_string(t.second) +  "\" stroke=\"black\" stroke-width=\"2\" r=\"10\" fill=\"grey\"/>";
+                CustomPair t = calculatePos(index);
+                svgData += "<circle cx=\"" + std::to_string(t.first) + "\" cy=\"" + std::to_string(t.second) +  "\" style=\"z-index:1\" stroke=\"black\" stroke-width=\"2\" r=\"10\" fill=\"grey\"/>";
             }
         }
         return svgData;
@@ -174,20 +198,23 @@ public:
         std::ofstream fichier("test.svg");
         fichier << generateHeader();
         fichier << generateSquares();
-        fichier << generateCircles(); 
+        std::string data = generateCircles(); 
+        printHull(arrayOfPairs, numberOfPoints);
+        fichier << generateLines(); 
+        fichier << data; 
         fichier << generateEnd(); 
-
-        int n = 3; 
-        printHull(arrayOfPairs, n);
-
         fichier.close();
     }
 
 private: 
-    int* data = new int[SIZE_DATA]; 
-    std::pair<int, int> arrayOfPairs[3]; 
-    int compteurPair = 0; 
-    std::set<std::pair<int, int>> hull;
+    int* data = new int[SIZE_DATA];
+    int numberOfPoints = 4;  
+    CustomPair arrayOfPairs[4]; 
+    int compteurPair = 0;
+
+    CustomPair hull[10];
+    int nElementsHull = 0; 
+
     float xInit = 96;
     float yInit = 48;
 };
