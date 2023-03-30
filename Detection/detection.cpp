@@ -1,17 +1,23 @@
 #include "../common.hpp"
 #include "detection.hpp"
 
+#define CONFIRM_INITIAL_DIRECTION 2000
+
 void Detection::waitFacingDirection(){
     Led led {&PORTA,&DDRA,PA0,PA1};
     while (true){
         led.turnLedAmber();
         if (isButtonPressed(&PINC,PINC4)){ // Bouton Interrupt
-            initialDirection_ = 0;
+            facingDirection_ = 0;
+            led.turnLedGreen();
+            _delay_ms(CONFIRM_INITIAL_DIRECTION);
             break;
         }
 
         else if (!(isButtonPressed(&PINC,PINC6))){ // Blanc
-            initialDirection_ = 1;
+            facingDirection_ = 2;
+            led.turnLedRed();
+            _delay_ms(CONFIRM_INITIAL_DIRECTION);
             break;
         }
     }
