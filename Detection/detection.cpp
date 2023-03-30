@@ -3,6 +3,10 @@
 
 #define CONFIRM_INITIAL_DIRECTION 2000
 
+Detection::Detection(){
+    nbPoles_ = 0;
+};
+
 void Detection::waitFacingDirection(){
     Led led {&PORTA,&DDRA,PA0,PA1};
     while (true){
@@ -26,10 +30,7 @@ void Detection::waitFacingDirection(){
 
 void Detection::executeDetectionState(){
     waitFacingDirection();
-};
-
-Detection::Detection(){
-    nbPoles_ = 0;
+    searchPole();
 };
 
 int main(){
