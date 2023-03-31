@@ -1,4 +1,13 @@
+#include "../common.hpp"
 #include "Can/can.h"
+
+#define CONFIRM_INITIAL_DIRECTION 2000
+#define LECTURE_DELAY 5
+#define Y_DISTANCE 8
+#define X_DISTANCE 1
+#define NOT_SIGNIFICANT_BITS 2
+
+enum class FacingDirection : uint8_t {NORTH,NORTH_EAST,EAST,SOUTH_EAST,SOUTH,SOUTH_WEST,WEST,NORTH_WEST};
 
 class Detection{
 public:
@@ -10,8 +19,8 @@ public:
     uint8_t findPole();
 private:
     uint8_t nbPoles_;
-    uint8_t facingDirection_; // 0 = Top, =1 for each 45 degrees turn [0,7]
-    uint8_t positionWithPole_ [32];
+    FacingDirection facingDirection_; 
+    uint8_t positionsWithPole_ [32];
     uint8_t currentPosition_;
     Led led_{&PORTA,&DDRA,PA0,PA1};
 };

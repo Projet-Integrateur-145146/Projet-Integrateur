@@ -5,8 +5,6 @@
 // INTERRUPT = PC4
 // BLANC = PC6
 
-enum class Robot{INIT,DETECTION,TRANSMISSION};
-
 Robot detectState(){
     Robot robot = Robot::INIT;
     DDRC &= ~(1<<PC4) & ~(1<<PC6);
