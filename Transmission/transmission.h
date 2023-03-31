@@ -1,11 +1,13 @@
 #include <iostream>
 #include <fstream>
 #include <string.h>
+#include <math.h>
 
 #define SIZE_DATA 32
-#define GAP_CIRCLES_X 106
-#define GAP_CIRCLES_Y 96
+#define GAP_CIRCLES_X 110
+#define GAP_CIRCLES_Y 110
 #define HEIGHT 576 
+#define M_PI   3.14159265358979323846 /* pi */
 
 struct CustomPair {
     float first;
@@ -18,7 +20,7 @@ struct CustomPair {
     friend bool operator<(const CustomPair a, const CustomPair b) {
         return a.first < b.first || a.second < b.second; 
     }
-};
+}; 
 
 
 class Transmission
@@ -26,10 +28,29 @@ class Transmission
 public: 
     Transmission() {
         // Valeurs pour tester 
-        data[0] = 1;
+
+        data[9] = 1; 
+        data[17] = 1;
+        data[25] = 1;
+        data[27] = 1; 
+        data[18] = 1; 
+        data[20] = 1; 
+
+        /*
+        data[0] = 1; 
+        data[1] = 1; 
+        data[8] = 1; 
+        data[9] = 1; 
+        data[16] = 1; 
+        data[17] = 1;       
+        */
+
+        /*
         data[2] = 1; 
-        data[16] = 1;  
-        data[18] = 1;   
+        data[1] = 1; 
+        data[10] = 1; 
+        data[9] = 1; 
+        */
     }; 
     ~Transmission() { delete[] data; }
 
@@ -62,7 +83,6 @@ public:
             }
         return false; 
     }
-
 
     // End points of line L are p1 and p2. side can have value
     // 1 or -1 specifying each of the parts made by the line L
@@ -122,24 +142,61 @@ public:
         // a[max_x]
         quickHull(a, n, a[min_x], a[max_x], -1);
 
-        std::cout << nElementsHull;
-        for (int i = 0; i < nElementsHull; i++) {
-            std::cout << "(" << hull[i].first << ", "
-            << hull[i].second << ") ";
-        }
     }
 
     CustomPair calculatePos(int index) {
         int posX = index % 8; 
         int posY = index / 8;  
         CustomPair t;
-        t.first = xInit + (GAP_CIRCLES_X * (posX + 1));
-        t.second = HEIGHT - (yInit + (GAP_CIRCLES_Y * (posY + 1)));
+        t.first = xInit + (GAP_CIRCLES_X * (posX)); 
+        t.second = HEIGHT - (yInit + (GAP_CIRCLES_Y * (posY))); 
         arrayOfPairs[compteurPair++] = t; 
         return t; 
     }
 
+    // Va nous permettre de trouver le barycentre de tout les points 
+    CustomPair getBarycenter() {
+        float sumX = 0;
+        float sumY = 0; 
+
+        for (int i = 0; i <= nElementsHull; i++) {
+            sumX += hull[i].first; 
+            sumY += hull[i].second; 
+        }
+        
+        CustomPair barycentre; 
+        barycentre.first = sumX/nElementsHull; 
+        barycentre.second = sumY/nElementsHull; 
+        return barycentre; 
+    }
+
+    // Permet d'avoir l'angle d'un point par rapport au barycentre
+    float getAngle(CustomPair point, CustomPair barycenter) {
+        CustomPair t;
+        t.first = (point.first - barycenter.first); 
+        t.second = (point.second - barycenter.second);  
+
+        float angle = (atan2f(t.second, t.first) * 180 / M_PI);
+        angle+=(angle<0)*360 ;
+        return angle;
+    }    
+
+    void sortList() {
+        CustomPair barycenter = getBarycenter();
+        for (int i = 0; i < nElementsHull; i++) {
+            for (int j = i; j < nElementsHull; j++) {
+                if (getAngle(hull[i], barycenter) > getAngle(hull[j], barycenter)) {
+                    CustomPair tempPoint = hull[i]; 
+                    hull[i] = hull[j]; 
+                    hull[j] = tempPoint;
+                    break;  
+                }
+            }
+        }
+    }
+
     std::string fillLines() {
+        sortList(); 
         std::string svgData = "<polygon points=\""; 
         for (int i = 0; i < nElementsHull; i++) {
             svgData += std::to_string(hull[i].first) + "," + std::to_string(hull[i].second) + " "; // "308,144 934,144 308,336";
@@ -170,12 +227,12 @@ public:
         std::string svgData = ""; 
         int posY = yInit; 
         for (int i = 0; i < 4; i++) {
-            posY += 96; 
             int posX = xInit;
             for (int j = 0; j < 8; j++){
-                posX += 106;
                 svgData += "<rect x=\"" + std::to_string(posX) + "\" y=\"" + std::to_string(posY) + "\" width=\"5\" height=\"5\" stroke=\"black\" stroke-width=\"1\" fill=\"black\"/>";
+                posX += 110;
             }
+            posY += 110; 
         }
         return svgData;
     }
@@ -186,10 +243,28 @@ public:
         return head; 
     }
 
+    int getAire() {
+        float S1 = 0, S2 = 0;
+
+        // Calculate S1 and S2
+        for (int i = 0; i < nElementsHull; i++) {
+            int j = (i + 1) % nElementsHull;
+            S1 += hull[i].first * hull[j].second;
+            S2 += hull[i].second * hull[j].first;
+        }
+
+        // Aire
+        float airePixel = 0.5 * abs(S1 - S2);
+        float pixel_size_x = 1 / 10.0; 
+        float pixel_size_y = 1 / 10.0; 
+        return airePixel * pixel_size_x * pixel_size_y; 
+    } 
+
     // Generates the end of the svg file
     std::string generateEnd() {
+        int aire = getAire(); 
         std::string end = "<text x=\"96\" y=\"36\" font-family=\"arial\" font-size=\"20\" fill=\"blue\">section 06 -- équipe 145146 -- VROUMY</text>";     
-        end += "<text x=\"96\" y=\"552\" font-family=\"arial\" font-size=\"20\" fill=\"blue\">Aire 484 pouces carrés</text> "; 
+        end += "<text x=\"96\" y=\"552\" font-family=\"arial\" font-size=\"20\" fill=\"blue\"> AIRE: " + std::to_string(aire) + " pouces carrés</text> "; 
         end += "</svg>";
         return end; 
     }
@@ -197,10 +272,10 @@ public:
     void generateSVG() {
         std::ofstream fichier("test.svg");
         fichier << generateHeader();
-        fichier << generateSquares();
         std::string data = generateCircles(); 
         printHull(arrayOfPairs, numberOfPoints);
         fichier << generateLines(); 
+        fichier << generateSquares();
         fichier << data; 
         fichier << generateEnd(); 
         fichier.close();
@@ -208,13 +283,11 @@ public:
 
 private: 
     int* data = new int[SIZE_DATA];
-    int numberOfPoints = 4;  
-    CustomPair arrayOfPairs[4]; 
+    int numberOfPoints = 6;  
+    CustomPair arrayOfPairs[6]; 
     int compteurPair = 0;
-
     CustomPair hull[10];
     int nElementsHull = 0; 
-
-    float xInit = 96;
-    float yInit = 48;
+    float xInit = 191;
+    float yInit = 123;
 };

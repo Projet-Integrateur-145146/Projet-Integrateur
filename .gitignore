@@ -1,0 +1,15 @@
+# Prerequisites
+*.d
+# Object files
+*.o
+*.obj
+*.elf
+# Linker output
+*.map
+# Libraries
+*.a
+# Compilation output binary
+*.out
+*.hex
+# Visual studio code
+.vscode/
