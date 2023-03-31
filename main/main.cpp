@@ -1,7 +1,8 @@
 #include "main.hpp"
-#include "../Detection/detection.hpp"
+//#include "../Detection/detection.hpp"
+#include "../common.hpp"
 
-// INTERRUPT = PC4 ou 5
+// INTERRUPT = PC4
 // BLANC = PC6
 
 enum class Robot{INIT,DETECTION,TRANSMISSION};
@@ -29,12 +30,14 @@ void executeTransmissionState(){
 
 int main(){
     Robot robot = detectState();
-    if (robot == Robot::DETECTION){
-        Detection detect;
-        detect.executeDetectionState();
-    }
-    else{
-        executeTransmissionState();
-    }
+    Led led {&PORTA,&DDRA,PA0,PA1};
+    led.turnLedRed();
+    // if (robot == Robot::DETECTION){
+    //     Detection detect;
+    //     detect.executeDetectionState();
+    // }
+    // else{
+    //     executeTransmissionState();
+    // }
 
 }
