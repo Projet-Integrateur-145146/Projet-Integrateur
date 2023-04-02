@@ -73,25 +73,25 @@ uint8_t Detection::findPole(){
         // _delay_ms(WAIT);
         // printDebug(str_value);
         _delay_ms(10);
-        if((value > 15) && (value < 18 )){
+        if((value >= MIN_VALUE_TWO_DIAGONAL) && (value <= MAX_VALUE_TWO_DIAGONAL)){
             // sprintf(buff,"Robot à 2 poteaux diagonale %u\n",value);
             // const char* str_pot = buff;
             // printDebug(str_pot);
             return 2;
         }
-        else if((value > 23) && (value < 27)){
+        else if((value >= MIN_VALUE_TWO_HORIZONTAL) && (value <= MAX_VALUE_TWO_HORIZONTAL)){
             // sprintf(buff,"Robot à 2 poteaux tout droit%u\n",value);
             // const char* str_pot = buff;
             // printDebug(str_pot);
             return 2;
         }
-        else if((value > 90)){
+        else if((value >= MIN_VALUE_ONE_HORIZONTAL)){
             // sprintf(buff,"Robot à 1 poteau tout droit%u\n",value);
             // const char* str_pot = buff;
             // printDebug(str_pot);
             return 1;
         }
-        else if((value > 46) && (value < 50)){
+        else if((value >= MIN_VALUE_ONE_DIAGONAL) && (value <= MAX_VALUE_ONE_DIAGONAL)){
             // sprintf(buff,"Robot à 1 poteau diagonale%u\n",value);
             // const char* str_pot = buff;
             // printDebug(str_pot);
@@ -111,7 +111,7 @@ void Detection::searchPole(){
     savePole(poleDistance); // Sauvegarde position Pole
     // Avance vers Pole
 
-    
+
     // char buffer[6];
     // for (uint8_t i = 0; i<32; i++){
     //     sprintf(buffer, "%u ", positionsWithPole_[i]);
