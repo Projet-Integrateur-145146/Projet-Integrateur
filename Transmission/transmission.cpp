@@ -1,12 +1,15 @@
 #include "transmission.h"
 
 Transmission::Transmission() {
-     data[9] = 1; 
-     data[17] = 1;
-     data[25] = 1;
-     data[27] = 1; 
-     data[18] = 1; 
-     data[20] = 1;
+     // On fait la lecture de EEPROM et on remplie data 
+     memoire.lecture(0, data, 32);
+     
+     for (uint8_t i = 0; i < 32; i++) {
+        if (data[i] == 1)
+            numberOfPoints++;
+     }
+
+
 }
 
 float Transmission::returnValue(CustomPair p1, CustomPair p2, CustomPair p) {
@@ -176,7 +179,7 @@ void Transmission::generateLines() {
 
 // Generates circles on the board if they are detected by the robot
 void Transmission::generateCircles() {
-    for (uint8_t index = 0; index < 6; index++) {
+    for (uint8_t index = 0; index < numberOfPoints; index++) {
         CustomPair t = arrayOfPairs[index];
         transmissionTableau("<circle cx=\""); 
         transmettreFloat(t.first);
