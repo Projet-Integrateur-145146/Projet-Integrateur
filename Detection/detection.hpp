@@ -1,5 +1,6 @@
 #include "../common.hpp"
 #include "Can/can.h"
+#include "PWM/pwm.h"
 
 #define CONFIRM_INITIAL_DIRECTION 2000
 #define LECTURE_DELAY 5
@@ -24,11 +25,13 @@ public:
     void searchPole();
     void savePole(uint8_t);
     uint8_t findPole();
+    void turn45Right();
 private:
     uint8_t nbPoles_;
     FacingDirection facingDirection_; 
     uint8_t positionsWithPole_ [32];
     uint8_t currentPosition_;
     Led led_{&PORTA,&DDRA,PA0,PA1};
+    PWM wheels_{};
 };
 

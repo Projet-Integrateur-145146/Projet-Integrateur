@@ -26,7 +26,7 @@
 /* Parametre d'entree  : uint8_t rapport - rapport auquel le pwm tourne       */
 /* Parametre de sortie : aucun                                                */
 /******************************************************************************/
-void PWM::ajustPWM(double ratio_a, double ratio_b){
+void PWM::ajustPWM(float ratio_a, float ratio_b){
     TCNT1 = 0x0;
     // mise à un des sorties OC1A et OC1B sur comparaison
     // réussie en mode PWM 8 bits, phase correcte
@@ -110,8 +110,8 @@ void PWM::setBackwardAll(){
 /* Parametre de sortie : uint8_t ratio de a et b a fournir au PWM              */
 /*******************************************************************************/
 void PWM::setDirection(uint8_t alpha){
-    double a = 0;
-    double b = 0;
+    float a = 0;
+    float b = 0;
     if((alpha > 0 ) && (alpha != 180) && (alpha != -180)){
         b =  100;
         a = (45 * b)/alpha;

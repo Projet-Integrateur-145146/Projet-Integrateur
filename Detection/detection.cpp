@@ -62,7 +62,7 @@ uint8_t Detection::findPole(){
     uint8_t pos = PA3;
     // char space[2] = " ";
     DDRA &= ~(1 << PA3); // configure le port PD3 en mode entrée
-    while(true){
+    //while(true){
         _delay_ms(LECTURE_DELAY);
         value = can.lecture(pos);
         value = value >> NOT_SIGNIFICANT_BITS ;
@@ -72,7 +72,7 @@ uint8_t Detection::findPole(){
         // const char* str_value = buffer;
         // _delay_ms(WAIT);
         // printDebug(str_value);
-        _delay_ms(10);
+        //_delay_ms(10);
         if((value >= MIN_VALUE_TWO_DIAGONAL) && (value <= MAX_VALUE_TWO_DIAGONAL)){
             // sprintf(buff,"Robot à 2 poteaux diagonale %u\n",value);
             // const char* str_pot = buff;
@@ -97,17 +97,28 @@ uint8_t Detection::findPole(){
             // printDebug(str_pot);
             return 1;
         }
+
+        return 0;
         // printDebug(space);
         // sprintf(buff,"Robot à 2 poteaux diagonale %u\n",value);
         // const char* str_pot = buff;
         // printDebug(str_pot);
-    }
+    //}
+}
+
+void Detection::turn45Right(){
+    wheels_.setBackwardRight();
+    wheels_.setForwardLeft();
+    wheels_.ajustPWM(230,230);
 }
 
 void Detection::searchPole(){
     // TODO
-    // Tourne
-    uint8_t poleDistance = findPole(); // Trouve Pole - Doit retourner la distance au pole (1 ou 2)
+    while(facingDirection_ != FacingDirection::NORTH_WEST){// Tourne
+        turn45Right();
+    }
+    
+    uint8_t poleDistance = findPole(); // Trouve Pole - Doit retourner la distance au pole (1 ou 2) Prends 5 ms
     savePole(poleDistance); // Sauvegarde position Pole
     // Avance vers Pole
 
