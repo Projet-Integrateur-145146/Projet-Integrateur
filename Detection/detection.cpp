@@ -3,6 +3,7 @@
 Detection::Detection() : positionsWithPole_{}{
     nbPoles_ = 0;
     currentPosition_ = 0;
+    numberOfGoodReadings_ = 0;
     DDRA &= ~(1 << PA3); // configure le port PD3 en mode entrée
 };
 
@@ -117,26 +118,33 @@ bool Detection::findPole(){
     uint8_t pos = PA3;
     value = can_.lecture(pos);
     value = value >> NOT_SIGNIFICANT_BITS;
-    if ((value <= MAX_VALUE_TWO_DIAGONAL) && (value >= MIN_VALUE_TWO_DIAGONAL)){
-        value = can_.lecture(pos);
-    }
     if (value >= MIN_VALUE_TWO_DIAGONAL){
+        numberOfGoodReadings_++;
+    }
+
+    else{
+        return false;
+    }
+    
+    if (numberOfGoodReadings_ >= 2){
         return true;
     }
-    return false;
+    
+    return ((value >= MIN_VALUE_TWO_DIAGONAL) && findPole());
 }
 
 bool Detection::turn45Right(){
-    uint8_t numberOfTimes = 0;
+    uint16_t numberOfTimes = 0;
     wheels_.setBackwardRight();
     wheels_.setForwardLeft();
-    wheels_.ajustPWM(30,30);
-    while (numberOfTimes < 28){
+    wheels_.ajustPWM(35,35);
+    while (numberOfTimes < 150){
+        numberOfGoodReadings_ = 0;
         if (findPole()){
             wheels_.ajustPWM(100,100);
             return true;
         }
-        _delay_ms(10);
+        _delay_ms(2);
         numberOfTimes++;
     }
 
@@ -148,12 +156,13 @@ bool Detection::turn45Right(){
         facingDirection_++;
     }
     
-    while (numberOfTimes < 56){
+    while (numberOfTimes < 270){
+        numberOfGoodReadings_ = 0;
         if (findPole()){
             wheels_.ajustPWM(100,100);
             return true;
         }
-        _delay_ms(10);
+        _delay_ms(2);
         numberOfTimes++;
     }
     
