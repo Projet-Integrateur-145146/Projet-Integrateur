@@ -61,7 +61,7 @@ uint8_t Detection::findPolePosition(){
     uint16_t value;
     uint8_t pos = PA3;
     // char space[2] = " ";
-    //while(true){
+    while(true){
         value = can_.lecture(pos);
         value = value >> NOT_SIGNIFICANT_BITS ;
         //char buffer[6]; // As uint16_t is maximum 5 characters, plus one for the null terminator
@@ -72,46 +72,54 @@ uint8_t Detection::findPolePosition(){
         // printDebug(str_value);
         //_delay_ms(10);
         if (value < MIN_VALUE_TWO_DIAGONAL){
-            return 0;
+            led_.turnLedGreen();
+            //return 0;
         }
         if((value >= MIN_VALUE_TWO_DIAGONAL) && (value <= MAX_VALUE_TWO_DIAGONAL)){
             // sprintf(buff,"Robot à 2 poteaux diagonale %u\n",value);
             // const char* str_pot = buff;
             // printDebug(str_pot);
-            return 2;
+            //return 2;
+            led_.turnLedRed();
         }
         else if((value >= MIN_VALUE_TWO_HORIZONTAL) && (value <= MAX_VALUE_TWO_HORIZONTAL)){
             // sprintf(buff,"Robot à 2 poteaux tout droit%u\n",value);
             // const char* str_pot = buff;
             // printDebug(str_pot);
-            return 2;
+            //return 2;
+            led_.turnLedOff();
         }
         else if((value >= MIN_VALUE_ONE_HORIZONTAL)){
             // sprintf(buff,"Robot à 1 poteau tout droit%u\n",value);
             // const char* str_pot = buff;
             // printDebug(str_pot);
-            return 1;
+            //return 1;
+            led_.turnLedOff();
         }
         else if((value >= MIN_VALUE_ONE_DIAGONAL) && (value <= MAX_VALUE_ONE_DIAGONAL)){
             // sprintf(buff,"Robot à 1 poteau diagonale%u\n",value);
             // const char* str_pot = buff;
             // printDebug(str_pot);
-            return 1;
+            //return 1;
+            led_.turnLedOff();
         }
 
-        return 0;
+        //return 0;
         // printDebug(space);
         // sprintf(buff,"Robot à 2 poteaux diagonale %u\n",value);
         // const char* str_pot = buff;
         // printDebug(str_pot);
-    //}
+    }
 }
 
 bool Detection::findPole(){
     uint16_t value;
     uint8_t pos = PA3;
     value = can_.lecture(pos);
-    value = value >> NOT_SIGNIFICANT_BITS ;
+    value = value >> NOT_SIGNIFICANT_BITS;
+    if ((value <= MAX_VALUE_TWO_DIAGONAL) && (value >= MIN_VALUE_TWO_DIAGONAL)){
+        value = can_.lecture(pos);
+    }
     if (value >= MIN_VALUE_TWO_DIAGONAL){
         return true;
     }
@@ -123,7 +131,7 @@ bool Detection::turn45Right(){
     wheels_.setBackwardRight();
     wheels_.setForwardLeft();
     wheels_.ajustPWM(30,30);
-    while (numberOfTimes < 25){
+    while (numberOfTimes < 28){
         if (findPole()){
             wheels_.ajustPWM(100,100);
             return true;
@@ -131,7 +139,7 @@ bool Detection::turn45Right(){
         _delay_ms(10);
         numberOfTimes++;
     }
-    
+
     if (facingDirection_ == NORTH_WEST){
         facingDirection_ = NORTH;
     }
@@ -140,7 +148,7 @@ bool Detection::turn45Right(){
         facingDirection_++;
     }
     
-    while (numberOfTimes < 50){
+    while (numberOfTimes < 56){
         if (findPole()){
             wheels_.ajustPWM(100,100);
             return true;
@@ -171,11 +179,16 @@ void Detection::searchPole(){
     }
 
     if (!isTherePole){
-        return;
+        isTherePole = turn45Right();
+        if (!isTherePole){
+            return;
+        }
+
+        facingDirection_ = stopTurningFacingDirection;
     }
     
-    uint8_t poleDistance = findPolePosition(); // Trouve Pole - Doit retourner la distance au pole (1 ou 2)
-    savePole(poleDistance); // Sauvegarde position Pole
+    //uint8_t poleDistance = findPolePosition(); // Trouve Pole - Doit retourner la distance au pole (1 ou 2)
+    //savePole(poleDistance); // Sauvegarde position Pole
     // Avance vers Pole
 
 
@@ -199,4 +212,5 @@ int main(){
     Detection detect;
     //detect.executeDetectionState();
     detect.executeDetectionState();
+    //detect.findPolePosition();
 }
