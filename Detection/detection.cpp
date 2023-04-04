@@ -62,7 +62,7 @@ uint8_t Detection::findPolePosition(){
     uint16_t value;
     uint8_t pos = PA3;
     // char space[2] = " ";
-    while(true){
+    //while(true){
         value = can_.lecture(pos);
         value = value >> NOT_SIGNIFICANT_BITS ;
         //char buffer[6]; // As uint16_t is maximum 5 characters, plus one for the null terminator
@@ -72,45 +72,41 @@ uint8_t Detection::findPolePosition(){
         // _delay_ms(WAIT);
         // printDebug(str_value);
         //_delay_ms(10);
-        if (value < MIN_VALUE_TWO_DIAGONAL){
-            led_.turnLedGreen();
-            //return 0;
-        }
         if((value >= MIN_VALUE_TWO_DIAGONAL) && (value <= MAX_VALUE_TWO_DIAGONAL)){
             // sprintf(buff,"Robot à 2 poteaux diagonale %u\n",value);
             // const char* str_pot = buff;
             // printDebug(str_pot);
-            //return 2;
-            led_.turnLedRed();
+            return 2;
+            //led_.turnLedRed();
         }
         else if((value >= MIN_VALUE_TWO_HORIZONTAL) && (value <= MAX_VALUE_TWO_HORIZONTAL)){
             // sprintf(buff,"Robot à 2 poteaux tout droit%u\n",value);
             // const char* str_pot = buff;
             // printDebug(str_pot);
-            //return 2;
-            led_.turnLedOff();
+            return 2;
+            //led_.turnLedOff();
         }
         else if((value >= MIN_VALUE_ONE_HORIZONTAL)){
             // sprintf(buff,"Robot à 1 poteau tout droit%u\n",value);
             // const char* str_pot = buff;
             // printDebug(str_pot);
-            //return 1;
-            led_.turnLedOff();
+            return 1;
+            //led_.turnLedOff();
         }
         else if((value >= MIN_VALUE_ONE_DIAGONAL) && (value <= MAX_VALUE_ONE_DIAGONAL)){
             // sprintf(buff,"Robot à 1 poteau diagonale%u\n",value);
             // const char* str_pot = buff;
             // printDebug(str_pot);
-            //return 1;
-            led_.turnLedOff();
+            return 1;
+            //led_.turnLedOff();
         }
 
-        //return 0;
+        return 0;
         // printDebug(space);
         // sprintf(buff,"Robot à 2 poteaux diagonale %u\n",value);
         // const char* str_pot = buff;
         // printDebug(str_pot);
-    }
+    //}
 }
 
 bool Detection::findPole(){
@@ -196,8 +192,18 @@ void Detection::searchPole(){
         facingDirection_ = stopTurningFacingDirection;
     }
     
-    //uint8_t poleDistance = findPolePosition(); // Trouve Pole - Doit retourner la distance au pole (1 ou 2)
-    //savePole(poleDistance); // Sauvegarde position Pole
+    // Trouve Pole - Doit retourner la distance au pole (1 ou 2)
+    uint8_t poleDistance = findPolePosition();
+    while (poleDistance == 0){
+        wheels_.setBackwardLeft();
+        wheels_.setForwardRight();
+        wheels_.ajustPWM(75,75);
+        _delay_ms(1);
+        poleDistance = findPolePosition();
+    }
+    wheels_.ajustPWM(100,100);
+    
+    savePole(poleDistance); // Sauvegarde position Pole
     // Avance vers Pole
 
 
