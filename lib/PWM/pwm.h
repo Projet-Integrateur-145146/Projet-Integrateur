@@ -23,7 +23,7 @@ public:
     ~PWM();
 
     // ajuster le PWM
-    void ajustPWM(double ratio_a,double ratio_b);
+    void ajustPWM(float ratio_a,float ratio_b);
 
     // faire avancer le robot
     void setForwardAll();
