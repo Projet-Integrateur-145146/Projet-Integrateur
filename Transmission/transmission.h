@@ -85,6 +85,12 @@ public:
 
     void transmissionTableau(const char* dataSVG);
 
+    void transmissionAndUpdtateCRC(uint8_t);  
+
+    uint32_t bit_reflect(uint32_t crc32, uint8_t nbits) ;
+
+    void calculCrc_32(uint8_t charactere, uint8_t data_len);   
+
     void generateSVG();
 
 private: 
@@ -97,4 +103,6 @@ private:
     uint8_t nElementsHull = 0; 
     float xInit = 191;
     float yInit = 123;
+    uint32_t compteurData = 0; 
+    uint32_t crc = 0xFFFFFFFF;
 };

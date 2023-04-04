@@ -1,4 +1,5 @@
 #include "transmission.h"
+#include <DEBUG/debug.h>
 
 Transmission::Transmission() {
      // On fait la lecture de EEPROM et on remplie data 
@@ -244,21 +245,53 @@ void Transmission::transmettreFloat(float value) {
 
     // Send integer part digits to UART
     for (uint16_t i = 1000; i > 0; i /= 10) {
-        memoire.transmissionUART('0' + ((integerPart / i) % 10));
+        transmissionAndUpdtateCRC('0' + ((integerPart / i) % 10));
     }
 
     // Send decimal point separator
-    memoire.transmissionUART('.');
+    transmissionAndUpdtateCRC('.');
 
     // Send decimal part digits to UART
     for (uint8_t i = 10; i > 0; i /= 10) {
-        memoire.transmissionUART('0' + ((decimalPart / i) % 10));
+        transmissionAndUpdtateCRC('0' + ((decimalPart / i) % 10));
     }
 }
 
 void Transmission::transmissionTableau(const char* dataSVG) {
     for (uint8_t i = 0; dataSVG[i] != '\0'; i++) {
-        memoire.transmissionUART(dataSVG[i]);
+        transmissionAndUpdtateCRC(dataSVG[i]);
+    }
+}
+
+void Transmission::transmissionAndUpdtateCRC(uint8_t charactere) {
+    compteurData++; 
+    calculCrc_32(charactere, 1); 
+    memoire.transmissionUART(charactere); 
+}
+
+//-------------------------Calcul CRC 32--------------------------------
+// Code tiré du site: https://www.carnetdumaker.net/articles/les-sommes-de-controle/
+
+uint32_t Transmission:: bit_reflect(uint32_t crc32, uint8_t nbits) {
+    uint32_t output = 0;
+    for (unsigned char i = 0; i < nbits; ++i) {
+        if (crc32 & 1) 
+            output |= 1 << ((nbits - 1) - i);
+        crc32 >>= 1;
+    }
+    crc = output; 
+    return output; 
+}
+
+void Transmission::calculCrc_32(uint8_t charactere, uint8_t data_len) {   
+    uint32_t dbyte = bit_reflect(charactere, 8);
+    crc ^= dbyte << 24;
+
+    for (uint8_t j = 0; j < 8; ++j) {
+        uint32_t mix = crc & 0x80000000;
+        crc = (crc << 1);
+        if (mix)
+            crc = crc ^ 0x04C11DB7;
     }
 }
 
@@ -276,8 +309,11 @@ void Transmission::generateSVG() {
     generateEnd();
     uint8_t fin = 0x03; 
     memoire.transmissionUART(fin); 
-    uint8_t CRC = 12; 
-    memoire.transmissionUART(CRC); 
+    bit_reflect(crc, 32); 
+    crc = crc ^ 0xFFFFFFFF; 
+
+    
+    //memoire.transmissionUART(crc ^ 0xFFFFFFFF); 
     fin = 0x04; 
     memoire.transmissionUART(fin); 
 }
