@@ -167,6 +167,35 @@ bool Detection::turn45Right(){
     return false;
 }
 
+void Detection::moveToPole(){
+    uint16_t value = can_.lecture(PA3);
+    value = value >> NOT_SIGNIFICANT_BITS;
+    if (value >= MIN_VALUE_ONE_HORIZONTAL){
+        return;
+    }
+
+    wheels_.setForwardAll();
+    wheels_.ajustPWM(30,35);
+    _delay_ms(700);
+    value = can_.lecture(PA3);
+    value = value >> NOT_SIGNIFICANT_BITS;
+    while ((value + 2) < maxValueRead_){
+        wheels_.setBackwardRight();
+        wheels_.setForwardLeft();
+        wheels_.ajustPWM(70,70);
+        _delay_ms(1);
+        value = can_.lecture(PA3);
+        value = value >> NOT_SIGNIFICANT_BITS;
+        wheels_.ajustPWM(100,100);
+    }
+    _delay_ms(500);
+
+
+    if (value > maxValueRead_){
+        maxValueRead_ = value;
+    }
+}
+
 void Detection::searchPole(){
     // TODO
     bool isTherePole = false;
@@ -197,15 +226,21 @@ void Detection::searchPole(){
     while (poleDistance == 0){
         wheels_.setBackwardLeft();
         wheels_.setForwardRight();
-        wheels_.ajustPWM(75,75);
+        wheels_.ajustPWM(60,60);
         _delay_ms(1);
         poleDistance = findPolePosition();
     }
     wheels_.ajustPWM(100,100);
     
+    uint16_t value = can_.lecture(PA3);
+    maxValueRead_ = value >> NOT_SIGNIFICANT_BITS;
     savePole(poleDistance); // Sauvegarde position Pole
     // Avance vers Pole
-
+    while (maxValueRead_ < MIN_VALUE_ONE_HORIZONTAL){
+        moveToPole();
+    }
+    wheels_.ajustPWM(100,100);
+    return;
 
     // char buffer[6];
     // for (uint8_t i = 0; i<32; i++){
@@ -225,7 +260,7 @@ void Detection::executeDetectionState(){
 int main(){
     DDRC &= ~(1<<PC4) & ~(1<<PC6);
     Detection detect;
-    //detect.executeDetectionState();
     detect.executeDetectionState();
     //detect.findPolePosition();
+    //detect.moveToPole();
 }

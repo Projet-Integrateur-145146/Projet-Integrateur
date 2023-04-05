@@ -33,12 +33,14 @@ public:
     uint8_t findPolePosition();
     bool findPole();
     bool turn45Right();
+    void moveToPole();
 private:
     uint8_t nbPoles_;
     uint8_t facingDirection_; 
     uint8_t positionsWithPole_ [32];
     uint8_t currentPosition_;
     uint8_t numberOfGoodReadings_;
+    uint8_t maxValueRead_;
     Led led_{&PORTA,&DDRA,PA0,PA1};
     PWM wheels_{};
     can can_;
