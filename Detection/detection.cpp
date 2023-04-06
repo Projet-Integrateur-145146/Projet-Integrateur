@@ -3,6 +3,7 @@
 Detection::Detection() : positionsWithPole_{}{
     nbPoles_ = 0;
     currentPosition_ = 0;
+    numberOfGoodReadings_ = 0;
     DDRA &= ~(1 << PA3); // configure le port PD3 en mode entrée
 };
 
@@ -61,7 +62,7 @@ uint8_t Detection::findPolePosition(){
     uint16_t value;
     uint8_t pos = PA3;
     // char space[2] = " ";
-    while(true){
+    //while(true){
         value = can_.lecture(pos);
         value = value >> NOT_SIGNIFICANT_BITS ;
         //char buffer[6]; // As uint16_t is maximum 5 characters, plus one for the null terminator
@@ -71,45 +72,41 @@ uint8_t Detection::findPolePosition(){
         // _delay_ms(WAIT);
         // printDebug(str_value);
         //_delay_ms(10);
-        if (value < MIN_VALUE_TWO_DIAGONAL){
-            led_.turnLedGreen();
-            //return 0;
-        }
         if((value >= MIN_VALUE_TWO_DIAGONAL) && (value <= MAX_VALUE_TWO_DIAGONAL)){
             // sprintf(buff,"Robot à 2 poteaux diagonale %u\n",value);
             // const char* str_pot = buff;
             // printDebug(str_pot);
-            //return 2;
-            led_.turnLedRed();
+            return 2;
+            //led_.turnLedRed();
         }
         else if((value >= MIN_VALUE_TWO_HORIZONTAL) && (value <= MAX_VALUE_TWO_HORIZONTAL)){
             // sprintf(buff,"Robot à 2 poteaux tout droit%u\n",value);
             // const char* str_pot = buff;
             // printDebug(str_pot);
-            //return 2;
-            led_.turnLedOff();
+            return 2;
+            //led_.turnLedOff();
         }
         else if((value >= MIN_VALUE_ONE_HORIZONTAL)){
             // sprintf(buff,"Robot à 1 poteau tout droit%u\n",value);
             // const char* str_pot = buff;
             // printDebug(str_pot);
-            //return 1;
-            led_.turnLedOff();
+            return 1;
+            //led_.turnLedOff();
         }
         else if((value >= MIN_VALUE_ONE_DIAGONAL) && (value <= MAX_VALUE_ONE_DIAGONAL)){
             // sprintf(buff,"Robot à 1 poteau diagonale%u\n",value);
             // const char* str_pot = buff;
             // printDebug(str_pot);
-            //return 1;
-            led_.turnLedOff();
+            return 1;
+            //led_.turnLedOff();
         }
 
-        //return 0;
+        return 0;
         // printDebug(space);
         // sprintf(buff,"Robot à 2 poteaux diagonale %u\n",value);
         // const char* str_pot = buff;
         // printDebug(str_pot);
-    }
+    //}
 }
 
 bool Detection::findPole(){
@@ -117,26 +114,33 @@ bool Detection::findPole(){
     uint8_t pos = PA3;
     value = can_.lecture(pos);
     value = value >> NOT_SIGNIFICANT_BITS;
-    if ((value <= MAX_VALUE_TWO_DIAGONAL) && (value >= MIN_VALUE_TWO_DIAGONAL)){
-        value = can_.lecture(pos);
-    }
     if (value >= MIN_VALUE_TWO_DIAGONAL){
+        numberOfGoodReadings_++;
+    }
+
+    else{
+        return false;
+    }
+    
+    if (numberOfGoodReadings_ >= 2){
         return true;
     }
-    return false;
+    
+    return ((value >= MIN_VALUE_TWO_DIAGONAL) && findPole());
 }
 
 bool Detection::turn45Right(){
-    uint8_t numberOfTimes = 0;
+    uint16_t numberOfTimes = 0;
     wheels_.setBackwardRight();
     wheels_.setForwardLeft();
-    wheels_.ajustPWM(30,30);
-    while (numberOfTimes < 28){
+    wheels_.ajustPWM(35,35);
+    while (numberOfTimes < 150){
+        numberOfGoodReadings_ = 0;
         if (findPole()){
             wheels_.ajustPWM(100,100);
             return true;
         }
-        _delay_ms(10);
+        _delay_ms(2);
         numberOfTimes++;
     }
 
@@ -148,18 +152,48 @@ bool Detection::turn45Right(){
         facingDirection_++;
     }
     
-    while (numberOfTimes < 56){
+    while (numberOfTimes < 270){
+        numberOfGoodReadings_ = 0;
         if (findPole()){
             wheels_.ajustPWM(100,100);
             return true;
         }
-        _delay_ms(10);
+        _delay_ms(2);
         numberOfTimes++;
     }
     
     //_delay_ms(500);
     wheels_.ajustPWM(100,100);
     return false;
+}
+
+void Detection::moveToPole(){
+    uint16_t value = can_.lecture(PA3);
+    value = value >> NOT_SIGNIFICANT_BITS;
+    if (value >= MIN_VALUE_ONE_HORIZONTAL){
+        return;
+    }
+
+    wheels_.setForwardAll();
+    wheels_.ajustPWM(30,35);
+    _delay_ms(700);
+    value = can_.lecture(PA3);
+    value = value >> NOT_SIGNIFICANT_BITS;
+    while ((value + 2) < maxValueRead_){
+        wheels_.setBackwardRight();
+        wheels_.setForwardLeft();
+        wheels_.ajustPWM(70,70);
+        _delay_ms(1);
+        value = can_.lecture(PA3);
+        value = value >> NOT_SIGNIFICANT_BITS;
+        wheels_.ajustPWM(100,100);
+    }
+    _delay_ms(500);
+
+
+    if (value > maxValueRead_){
+        maxValueRead_ = value;
+    }
 }
 
 void Detection::searchPole(){
@@ -187,10 +221,26 @@ void Detection::searchPole(){
         facingDirection_ = stopTurningFacingDirection;
     }
     
-    //uint8_t poleDistance = findPolePosition(); // Trouve Pole - Doit retourner la distance au pole (1 ou 2)
-    //savePole(poleDistance); // Sauvegarde position Pole
+    // Trouve Pole - Doit retourner la distance au pole (1 ou 2)
+    uint8_t poleDistance = findPolePosition();
+    while (poleDistance == 0){
+        wheels_.setBackwardLeft();
+        wheels_.setForwardRight();
+        wheels_.ajustPWM(60,60);
+        _delay_ms(1);
+        poleDistance = findPolePosition();
+    }
+    wheels_.ajustPWM(100,100);
+    
+    uint16_t value = can_.lecture(PA3);
+    maxValueRead_ = value >> NOT_SIGNIFICANT_BITS;
+    savePole(poleDistance); // Sauvegarde position Pole
     // Avance vers Pole
-
+    while (maxValueRead_ < MIN_VALUE_ONE_HORIZONTAL){
+        moveToPole();
+    }
+    wheels_.ajustPWM(100,100);
+    return;
 
     // char buffer[6];
     // for (uint8_t i = 0; i<32; i++){
@@ -210,7 +260,7 @@ void Detection::executeDetectionState(){
 int main(){
     DDRC &= ~(1<<PC4) & ~(1<<PC6);
     Detection detect;
-    //detect.executeDetectionState();
     detect.executeDetectionState();
     //detect.findPolePosition();
+    //detect.moveToPole();
 }

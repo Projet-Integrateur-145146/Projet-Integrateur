@@ -7,7 +7,7 @@
 #define Y_DISTANCE 8
 #define X_DISTANCE 1
 #define NOT_SIGNIFICANT_BITS 2
-#define MIN_VALUE_TWO_DIAGONAL 18
+#define MIN_VALUE_TWO_DIAGONAL 16
 #define MAX_VALUE_TWO_DIAGONAL 23
 #define MIN_VALUE_TWO_HORIZONTAL 25
 #define MAX_VALUE_TWO_HORIZONTAL 29
@@ -33,11 +33,14 @@ public:
     uint8_t findPolePosition();
     bool findPole();
     bool turn45Right();
+    void moveToPole();
 private:
     uint8_t nbPoles_;
     uint8_t facingDirection_; 
     uint8_t positionsWithPole_ [32];
     uint8_t currentPosition_;
+    uint8_t numberOfGoodReadings_;
+    uint8_t maxValueRead_;
     Led led_{&PORTA,&DDRA,PA0,PA1};
     PWM wheels_{};
     can can_;
