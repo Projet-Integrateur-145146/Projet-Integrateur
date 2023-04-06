@@ -1,23 +1,44 @@
 #include "detection.hpp"
 
+volatile const uint8_t gButtonPressed = 0;
+
+// ISR ( 'modifier ici' ) {
+
+// _delay_ms ( 30 );
+
+
+// 'modifier ici'
+
+// // changements d'état tels que ceux de la
+
+// // semaine précédente
+
+// 'modifier ici'
+
+// // Voir la note plus bas pour comprendre cette instruction et son rôle
+
+// EIFR |= (1 << INTF0) ;
+
+// }
+
 Detection::Detection() : positionsWithPole_{}{
     nbPoles_ = 0;
     currentPosition_ = 0;
     numberOfGoodReadings_ = 0;
+    hasFoundNoPole_ = false;
     DDRA &= ~(1 << PA3); // configure le port PD3 en mode entrée
 };
 
 void Detection::waitFacingDirection(){
     while (true){
         led_.turnLedAmber();
-        if (isButtonPressed(&PINC,PINC4)){ // Bouton Interrupt
+        if (isButtonPressed(&PINB,PINB2)){ // Bouton Interrupt
             facingDirection_ = NORTH;
             led_.turnLedGreen();
             _delay_ms(CONFIRM_INITIAL_DIRECTION);
             break;
         }
-
-        else if (!(isButtonPressed(&PINC,PINC6))){ // Blanc
+        if (!(isButtonPressed(&PINC,PINC6))){ // Blanc
             facingDirection_ = EAST;
             led_.turnLedRed();
             _delay_ms(CONFIRM_INITIAL_DIRECTION);
@@ -62,7 +83,7 @@ uint8_t Detection::findPolePosition(){
     uint16_t value;
     uint8_t pos = PA3;
     // char space[2] = " ";
-    //while(true){
+    while(true){
         value = can_.lecture(pos);
         value = value >> NOT_SIGNIFICANT_BITS ;
         //char buffer[6]; // As uint16_t is maximum 5 characters, plus one for the null terminator
@@ -72,36 +93,41 @@ uint8_t Detection::findPolePosition(){
         // _delay_ms(WAIT);
         // printDebug(str_value);
         //_delay_ms(10);
+
         if((value >= MIN_VALUE_TWO_DIAGONAL) && (value <= MAX_VALUE_TWO_DIAGONAL)){
             // sprintf(buff,"Robot à 2 poteaux diagonale %u\n",value);
             // const char* str_pot = buff;
             // printDebug(str_pot);
-            return 2;
-            //led_.turnLedRed();
+            return TWO_SPACES_AWAY;
+            //led_.turnLedGreen();
         }
         else if((value >= MIN_VALUE_TWO_HORIZONTAL) && (value <= MAX_VALUE_TWO_HORIZONTAL)){
             // sprintf(buff,"Robot à 2 poteaux tout droit%u\n",value);
             // const char* str_pot = buff;
             // printDebug(str_pot);
-            return 2;
+            return TWO_SPACES_AWAY;
+            
             //led_.turnLedOff();
         }
         else if((value >= MIN_VALUE_ONE_HORIZONTAL)){
             // sprintf(buff,"Robot à 1 poteau tout droit%u\n",value);
             // const char* str_pot = buff;
             // printDebug(str_pot);
-            return 1;
+            return ONE_SPACE_AWAY;
             //led_.turnLedOff();
         }
         else if((value >= MIN_VALUE_ONE_DIAGONAL) && (value <= MAX_VALUE_ONE_DIAGONAL)){
             // sprintf(buff,"Robot à 1 poteau diagonale%u\n",value);
             // const char* str_pot = buff;
             // printDebug(str_pot);
-            return 1;
+            return ONE_SPACE_AWAY;
             //led_.turnLedOff();
         }
 
-        return 0;
+        else{led_.turnLedRed();}
+        }
+
+
         // printDebug(space);
         // sprintf(buff,"Robot à 2 poteaux diagonale %u\n",value);
         // const char* str_pot = buff;
@@ -114,7 +140,7 @@ bool Detection::findPole(){
     uint8_t pos = PA3;
     value = can_.lecture(pos);
     value = value >> NOT_SIGNIFICANT_BITS;
-    if (value >= MIN_VALUE_TWO_DIAGONAL){
+    if ((value >= MIN_VALUE_TWO_DIAGONAL)){
         numberOfGoodReadings_++;
     }
 
@@ -122,7 +148,7 @@ bool Detection::findPole(){
         return false;
     }
     
-    if (numberOfGoodReadings_ >= 2){
+    if (numberOfGoodReadings_ >= MIN_NUMBER_GOOD_READINGS){
         return true;
     }
     
@@ -133,14 +159,14 @@ bool Detection::turn45Right(){
     uint16_t numberOfTimes = 0;
     wheels_.setBackwardRight();
     wheels_.setForwardLeft();
-    wheels_.ajustPWM(35,35);
-    while (numberOfTimes < 150){
+    wheels_.ajustPWM(WHEELS_FAST,WHEELS_FAST);
+    while (numberOfTimes < NUMBER_READINGS_PREVIOUS_FACING_DIRECTION){
         numberOfGoodReadings_ = 0;
         if (findPole()){
-            wheels_.ajustPWM(100,100);
+            wheels_.ajustPWM(WHEELS_OFF, WHEELS_OFF);
             return true;
         }
-        _delay_ms(2);
+        _delay_ms(DELAY_BETWEEN_READINGS);
         numberOfTimes++;
     }
 
@@ -152,18 +178,18 @@ bool Detection::turn45Right(){
         facingDirection_++;
     }
     
-    while (numberOfTimes < 270){
+    while (numberOfTimes < NUMBER_READINGS_CURRENT_FACING_DIRECTION){
         numberOfGoodReadings_ = 0;
         if (findPole()){
-            wheels_.ajustPWM(100,100);
+            wheels_.ajustPWM(WHEELS_OFF, WHEELS_OFF);
             return true;
         }
-        _delay_ms(2);
+        _delay_ms(DELAY_BETWEEN_READINGS);
         numberOfTimes++;
     }
     
     //_delay_ms(500);
-    wheels_.ajustPWM(100,100);
+    wheels_.ajustPWM(WHEELS_OFF, WHEELS_OFF);
     return false;
 }
 
@@ -175,20 +201,20 @@ void Detection::moveToPole(){
     }
 
     wheels_.setForwardAll();
-    wheels_.ajustPWM(30,35);
-    _delay_ms(700);
+    wheels_.ajustPWM(WHEELS_FAST_LEFT_WHEEL_ADJUSTMENT,WHEELS_FAST);
+    _delay_ms(DELAY_BEFORE_CORRECTION_READING);
     value = can_.lecture(PA3);
     value = value >> NOT_SIGNIFICANT_BITS;
-    while ((value + 2) < maxValueRead_){
+    while (value < maxValueRead_){
         wheels_.setBackwardRight();
         wheels_.setForwardLeft();
-        wheels_.ajustPWM(70,70);
-        _delay_ms(1);
+        wheels_.ajustPWM(WHEELS_SLOW,WHEELS_SLOW);
+        _delay_ms(DELAY_BEFORE_OTHER_READING);
         value = can_.lecture(PA3);
         value = value >> NOT_SIGNIFICANT_BITS;
-        wheels_.ajustPWM(100,100);
+        wheels_.ajustPWM(WHEELS_OFF,WHEELS_OFF);
     }
-    _delay_ms(500);
+    _delay_ms(DELAY_PREVENT_CAR_SLIDING);
 
 
     if (value > maxValueRead_){
@@ -209,37 +235,50 @@ void Detection::searchPole(){
     //uint8_t stopTurningFacingDirection = facingDirection_ - 1;
     while((facingDirection_ != stopTurningFacingDirection) && !isTherePole){// Tourne
         isTherePole = turn45Right();
-        _delay_ms(1000);
+        _delay_ms(DELAY_BETWEEN_TWO_TURNS);
     }
 
     if (!isTherePole){
         isTherePole = turn45Right();
         if (!isTherePole){
+            hasFoundNoPole_ = true;
             return;
         }
-
         facingDirection_ = stopTurningFacingDirection;
     }
     
     // Trouve Pole - Doit retourner la distance au pole (1 ou 2)
     uint8_t poleDistance = findPolePosition();
-    while (poleDistance == 0){
+    while (poleDistance == NO_POLE_FOUND){
         wheels_.setBackwardLeft();
         wheels_.setForwardRight();
-        wheels_.ajustPWM(60,60);
-        _delay_ms(1);
+        wheels_.ajustPWM(WHEELS_HALF_SPEED,WHEELS_HALF_SPEED);
+        _delay_ms(DELAY_BEFORE_OTHER_READING);
         poleDistance = findPolePosition();
     }
-    wheels_.ajustPWM(100,100);
+    wheels_.ajustPWM(WHEELS_OFF,WHEELS_OFF);
     
     uint16_t value = can_.lecture(PA3);
     maxValueRead_ = value >> NOT_SIGNIFICANT_BITS;
     savePole(poleDistance); // Sauvegarde position Pole
     // Avance vers Pole
-    while (maxValueRead_ < MIN_VALUE_ONE_HORIZONTAL){
+    uint8_t timesMoved = 0;
+    while ((maxValueRead_ < MIN_VALUE_ONE_HORIZONTAL)){
         moveToPole();
+        led_.turnLedAmber();
+        if (timesMoved > 6){
+            break;
+        }
+        timesMoved++;
     }
-    wheels_.ajustPWM(100,100);
+    wheels_.ajustPWM(WHEELS_OFF,WHEELS_OFF);
+    for (uint8_t i = 0; i<3;i++){
+        piezo_.playSound(45);
+        _delay_ms(300);
+        piezo_.stopSound();
+        _delay_ms(300);
+    }
+
     return;
 
     // char buffer[6];
@@ -255,10 +294,18 @@ void Detection::searchPole(){
 void Detection::executeDetectionState(){
     waitFacingDirection();
     searchPole();
+    
+    while(!hasFoundNoPole_){
+        led_.turnLedAmber();
+        if(gButtonPressed){
+            searchPole();
+        }
+    }
+    //findPolePosition();
 };
 
 int main(){
-    DDRC &= ~(1<<PC4) & ~(1<<PC6);
+    DDRC &= ~(1<<PB2) & ~(1<<PC6);
     Detection detect;
     detect.executeDetectionState();
     //detect.findPolePosition();

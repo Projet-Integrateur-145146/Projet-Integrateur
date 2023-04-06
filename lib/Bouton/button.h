@@ -1,7 +1,7 @@
 #ifndef F_CPU
 #define F_CPU 8000000UL
 #endif
-#define BUTTON_DEBOUNCE_DELAY 15
+#define BUTTON_DEBOUNCE_DELAY 5
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
