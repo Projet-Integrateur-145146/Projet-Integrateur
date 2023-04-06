@@ -1,10 +1,13 @@
 #include "transmission.h"
-#include <DEBUG/debug.h>
 
 Transmission::Transmission() {
+     memoire.initialisationUART();     
+     // On ecrit dans la memoire
+     uint8_t motEcrit[32] = {1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0,0,0,0,0,0,0,0,0,0};
+     memoire.ecriture(0, motEcrit, 32);
+
      // On fait la lecture de EEPROM et on remplie data 
      memoire.lecture(0, data, 32);
-     
      for (uint8_t i = 0; i < 32; i++) {
         if (data[i] == 1)
             numberOfPoints++;
@@ -263,41 +266,40 @@ void Transmission::transmissionTableau(const char* dataSVG) {
     }
 }
 
+void Transmission::transmettreUint32(uint32_t value) {
+    const char hexDigits[] = "0123456789abcdef";
+
+    for (int i = 0; i < 8; ++i) {
+        uint8_t hexDigitIndex = (value >> (4 * (7 - i))) & 0xF;
+        char hexDigit = hexDigits[hexDigitIndex];
+        memoire.transmissionUART(hexDigit);
+    }
+}
+
 void Transmission::transmissionAndUpdtateCRC(uint8_t charactere) {
-    compteurData++; 
-    calculCrc_32(charactere, 1); 
-    memoire.transmissionUART(charactere); 
+    if (fini == false) {
+        updateCRC(charactere);   
+        memoire.transmissionUART(charactere); 
+    }
 }
 
 //-------------------------Calcul CRC 32--------------------------------
 // Code tiré du site: https://www.carnetdumaker.net/articles/les-sommes-de-controle/
 
-uint32_t Transmission:: bit_reflect(uint32_t crc32, uint8_t nbits) {
-    uint32_t output = 0;
-    for (unsigned char i = 0; i < nbits; ++i) {
-        if (crc32 & 1) 
-            output |= 1 << ((nbits - 1) - i);
-        crc32 >>= 1;
-    }
-    crc = output; 
-    return output; 
-}
 
-void Transmission::calculCrc_32(uint8_t charactere, uint8_t data_len) {   
-    uint32_t dbyte = bit_reflect(charactere, 8);
-    crc ^= dbyte << 24;
-
-    for (uint8_t j = 0; j < 8; ++j) {
-        uint32_t mix = crc & 0x80000000;
-        crc = (crc << 1);
-        if (mix)
-            crc = crc ^ 0x04C11DB7;
-    }
+void Transmission::updateCRC(uint8_t data_byte) {
+    crc ^= static_cast<uint32_t>(data_byte);
+    for (int i = 0; i < 8; ++i) {
+        if (crc & 1) {
+            crc = (crc >> 1) ^ 0xEDB88320;
+        } else {
+            crc = crc >> 1;
+        }
+    }   
 }
 
 void Transmission::generateSVG() {
     //--------------------- NEW CPP ------------------------
-    memoire.initialisationUART(); 
     uint8_t debut = 0x02;
     memoire.transmissionUART(debut); 
     findPos(); 
@@ -307,13 +309,11 @@ void Transmission::generateSVG() {
     generateSquares(); 
     generateCircles();
     generateEnd();
+    fini = true;
     uint8_t fin = 0x03; 
     memoire.transmissionUART(fin); 
-    bit_reflect(crc, 32); 
-    crc = crc ^ 0xFFFFFFFF; 
-
-    
-    //memoire.transmissionUART(crc ^ 0xFFFFFFFF); 
+    crc = crc ^ 0xFFFFFFFF;
+    transmettreUint32(crc); 
     fin = 0x04; 
     memoire.transmissionUART(fin); 
 }

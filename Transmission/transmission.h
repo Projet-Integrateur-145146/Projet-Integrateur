@@ -87,9 +87,9 @@ public:
 
     void transmissionAndUpdtateCRC(uint8_t);  
 
-    uint32_t bit_reflect(uint32_t crc32, uint8_t nbits) ;
+    void transmettreUint32(uint32_t value);
 
-    void calculCrc_32(uint8_t charactere, uint8_t data_len);   
+    void updateCRC(uint8_t data_byte);
 
     void generateSVG();
 
@@ -104,5 +104,6 @@ private:
     float xInit = 191;
     float yInit = 123;
     uint32_t compteurData = 0; 
+    bool fini = false;
     uint32_t crc = 0xFFFFFFFF;
 };
