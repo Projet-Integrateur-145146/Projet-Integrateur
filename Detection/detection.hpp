@@ -2,6 +2,7 @@
 #include "Can/can.h"
 #include "PWM/pwm.h"
 #include "Piezo/piezo.h"
+#include "RS232/memoire_24.h"
 
 #define CONFIRM_INITIAL_DIRECTION 2000
 #define LECTURE_DELAY 5
@@ -51,6 +52,8 @@ public:
     bool findPole();
     bool turn45Right();
     void moveToPole();
+    void writePolesInMemory();
+    void declareFinish();
 private:
     uint8_t nbPoles_;
     uint8_t facingDirection_; 

@@ -1,25 +1,15 @@
 #include "detection.hpp"
 
-volatile const uint8_t gButtonPressed = 0;
+volatile uint8_t gButtonPressed = 0;
 
-// ISR ( 'modifier ici' ) {
+ISR (INT2_vect) {
+_delay_ms ( 30 );
 
-// _delay_ms ( 30 );
-
-
-// 'modifier ici'
-
-// // changements d'état tels que ceux de la
-
-// // semaine précédente
-
-// 'modifier ici'
-
-// // Voir la note plus bas pour comprendre cette instruction et son rôle
-
-// EIFR |= (1 << INTF0) ;
-
-// }
+if (PINB & (1<<PINB2)){
+    gButtonPressed = 1;
+}
+EIFR |= (1 << INTF2) ;
+}
 
 Detection::Detection() : positionsWithPole_{}{
     nbPoles_ = 0;
@@ -273,7 +263,7 @@ void Detection::searchPole(){
     }
     wheels_.ajustPWM(WHEELS_OFF,WHEELS_OFF);
     for (uint8_t i = 0; i<3;i++){
-        piezo_.playSound(45);
+        piezo_.playSound(81);
         _delay_ms(300);
         piezo_.stopSound();
         _delay_ms(300);
@@ -294,20 +284,52 @@ void Detection::searchPole(){
 void Detection::executeDetectionState(){
     waitFacingDirection();
     searchPole();
-    
+    EIMSK |= (1 << INT2);
     while(!hasFoundNoPole_){
         led_.turnLedAmber();
         if(gButtonPressed){
+            EIMSK &= ~(1 << INT2);
             searchPole();
+            gButtonPressed = 0;
+            EIMSK |= (1 << INT2);
         }
     }
     //findPolePosition();
 };
 
+void Detection::writePolesInMemory(){
+    Memoire24CXXX mem;
+    uint8_t* ptr = positionsWithPole_;
+    mem.ecriture(0,ptr,32);
+}
+
+void Detection::declareFinish(){
+    piezo_.playSound(45);
+    _delay_ms(2000);
+    piezo_.stopSound();
+    while(true){
+        led_.turnLedRed();
+        _delay_ms(250);
+        led_.turnLedOff();
+        _delay_ms(250);
+        led_.turnLedRed();
+        _delay_ms(250);
+        led_.turnLedOff();
+        _delay_ms(250);
+    }
+}
+
+void initialisation(void){
+cli ();
+DDRC &= ~(1<<PB2) & ~(1<<PC6);
+EICRA |= (1<<ISC20) | (1<<ISC21);   
+sei ();
+}
+
 int main(){
-    DDRC &= ~(1<<PB2) & ~(1<<PC6);
+    initialisation();
     Detection detect;
     detect.executeDetectionState();
-    //detect.findPolePosition();
-    //detect.moveToPole();
+    detect.writePolesInMemory();
+    detect.declareFinish();
 }
