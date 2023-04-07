@@ -1,6 +1,6 @@
 //#include "../Detection/detection.hpp"
-#include "../common.hpp"
 #include "transmission.h"
+#include "detection.hpp"
 
 enum class Robot{INIT,DETECTION,TRANSMISSION};
 
@@ -11,6 +11,7 @@ void executeTransmission() {
 }
 void executeDetection() {
     // Code pour execute la classe de detection 
+    startDetecting();
 }
 
 void executeINIT() {return ;}
@@ -21,10 +22,14 @@ void executeINIT() {return ;}
 void switchState(Robot& stateRobot) {
     switch (stateRobot) {
         case Robot::INIT: 
-            if (isButtonPressed(&PINC,PINC4))
+            if (isButtonPressed(&PINB,PINB2)) {
+                while(isButtonPressed(&PINB,PINB2)){}
                 stateRobot = Robot::DETECTION;  
-            else if (!(isButtonPressed(&PINC,PINC6))) 
-                stateRobot = Robot::TRANSMISSION;  
+            }
+            else if (!(isButtonPressed(&PINC,PINC6))) {
+                while(!(isButtonPressed(&PINC,PINC6))){}
+                stateRobot = Robot::TRANSMISSION; 
+            } 
             break; 
         case Robot::DETECTION: break; 
         case Robot::TRANSMISSION: break; 
@@ -42,7 +47,7 @@ void executeState(Robot& stateRobot) {
 int main(){
 
     Robot robot = Robot::INIT;
-    DDRC &= ~(1<<PC4) & ~(1<<PC6);
+    DDRC &= ~(1<<PB2) & ~(1<<PC6);
 
     while (true) {
         switchState(robot);

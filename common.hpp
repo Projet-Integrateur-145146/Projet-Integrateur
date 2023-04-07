@@ -6,3 +6,4 @@
 #include <util/twi.h>
 #include <util/delay.h> 
 #include <Debug/debug.h>
+#include <RS232/memoire_24.h>

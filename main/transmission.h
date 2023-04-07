@@ -1,10 +1,10 @@
-//#include <iostream>
-//#include <fstream>
-#include <avr/io.h> 
+#ifndef COMMON_H
+#define COMMON_H
+#include "../common.hpp"
+#endif
 #include <math.h>
 #include <stdio.h>
 #include <stdint.h>
-#include <RS232/memoire_24.h>
 
 #define F_CPU 8000000UL
 #define SIZE_DATA 32
