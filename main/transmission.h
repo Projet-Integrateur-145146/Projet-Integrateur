@@ -97,9 +97,9 @@ private:
     Memoire24CXXX memoire; 
     uint8_t data[SIZE_DATA]; //fait
     uint8_t numberOfPoints = 0;  //fait
-    CustomPair arrayOfPairs[13]; 
+    CustomPair arrayOfPairs[8]; 
     uint8_t compteurPair = 0;
-    CustomPair hull[13];
+    CustomPair hull[8];
     uint8_t nElementsHull = 0; 
     float xInit = 191;
     float yInit = 123;

@@ -39,32 +39,36 @@ void Detection::waitFacingDirection(){
 }
 
 void Detection::savePole(uint8_t poleDistance){
+    uint8_t tempPosition = -1;
     switch(facingDirection_){
         case NORTH:
-            positionsWithPole_[currentPosition_+Y_DISTANCE*poleDistance] = 1;
+            tempPosition = currentPosition_+Y_DISTANCE*poleDistance;
             break;
         case NORTH_EAST:
-            positionsWithPole_[currentPosition_+(Y_DISTANCE+X_DISTANCE)*poleDistance] = 1;
+            tempPosition = currentPosition_+(Y_DISTANCE+X_DISTANCE)*poleDistance;
             break;
         case EAST:
-            positionsWithPole_[currentPosition_+X_DISTANCE*poleDistance] = 1;
+            tempPosition = currentPosition_+X_DISTANCE*poleDistance;
             break;
         case SOUTH_EAST:
-            positionsWithPole_[currentPosition_+(X_DISTANCE-Y_DISTANCE)*poleDistance] = 1;
+            tempPosition = currentPosition_+(X_DISTANCE-Y_DISTANCE)*poleDistance;
             break;
         case SOUTH:
-            positionsWithPole_[currentPosition_-(Y_DISTANCE*poleDistance)] = 1;
+            tempPosition = currentPosition_-(Y_DISTANCE*poleDistance);
             break;
         case SOUTH_WEST:
-            positionsWithPole_[currentPosition_-(X_DISTANCE+Y_DISTANCE)*poleDistance] = 1;
+            tempPosition = currentPosition_-(X_DISTANCE+Y_DISTANCE)*poleDistance;
             break;
         case WEST:
-            positionsWithPole_[currentPosition_-(X_DISTANCE*poleDistance)] = 1;
+            tempPosition = currentPosition_-(X_DISTANCE*poleDistance);
             break;
         case NORTH_WEST:
-            positionsWithPole_[currentPosition_+(Y_DISTANCE-X_DISTANCE)*poleDistance] = 1;
+            tempPosition = currentPosition_+(Y_DISTANCE-X_DISTANCE)*poleDistance;
             break;
     }
+    if ((tempPosition > 32) || tempPosition < 0) {return;}
+    positionsWithPole_[tempPosition] = 1;
+    currentPosition_ = tempPosition;
     nbPoles_++;
 
 }
@@ -73,7 +77,7 @@ uint8_t Detection::findPolePosition(){
     uint16_t value;
     uint8_t pos = PA3;
     // char space[2] = " ";
-    while(true){
+    //while(true){
         value = can_.lecture(pos);
         value = value >> NOT_SIGNIFICANT_BITS ;
         //char buffer[6]; // As uint16_t is maximum 5 characters, plus one for the null terminator
@@ -83,46 +87,55 @@ uint8_t Detection::findPolePosition(){
         // _delay_ms(WAIT);
         // printDebug(str_value);
         //_delay_ms(10);
+        if (value < MIN_VALUE_TWO_DIAGONAL){
+            return 0;
+        }
 
         if((value >= MIN_VALUE_TWO_DIAGONAL) && (value <= MAX_VALUE_TWO_DIAGONAL)){
             // sprintf(buff,"Robot à 2 poteaux diagonale %u\n",value);
             // const char* str_pot = buff;
             // printDebug(str_pot);
+            maxValueRead_ = value;
             return TWO_SPACES_AWAY;
-            //led_.turnLedGreen();
+            led_.turnLedGreen();
         }
         else if((value >= MIN_VALUE_TWO_HORIZONTAL) && (value <= MAX_VALUE_TWO_HORIZONTAL)){
             // sprintf(buff,"Robot à 2 poteaux tout droit%u\n",value);
             // const char* str_pot = buff;
             // printDebug(str_pot);
+            maxValueRead_ = value;
             return TWO_SPACES_AWAY;
             
-            //led_.turnLedOff();
+            led_.turnLedOff();
         }
         else if((value >= MIN_VALUE_ONE_HORIZONTAL)){
             // sprintf(buff,"Robot à 1 poteau tout droit%u\n",value);
             // const char* str_pot = buff;
             // printDebug(str_pot);
+            maxValueRead_ = value;
             return ONE_SPACE_AWAY;
-            //led_.turnLedOff();
+            led_.turnLedOff();
         }
         else if((value >= MIN_VALUE_ONE_DIAGONAL) && (value <= MAX_VALUE_ONE_DIAGONAL)){
             // sprintf(buff,"Robot à 1 poteau diagonale%u\n",value);
             // const char* str_pot = buff;
             // printDebug(str_pot);
+            maxValueRead_ = value;
             return ONE_SPACE_AWAY;
-            //led_.turnLedOff();
+            led_.turnLedRed();
         }
 
-        else{led_.turnLedRed();}
-        }
-
+        else{
+            return NO_POLE_FOUND;
+            led_.turnLedOff();
+            }
+       // }
 
         // printDebug(space);
         // sprintf(buff,"Robot à 2 poteaux diagonale %u\n",value);
         // const char* str_pot = buff;
         // printDebug(str_pot);
-    //}
+
 }
 
 bool Detection::findPole(){
@@ -191,18 +204,32 @@ void Detection::moveToPole(){
     }
 
     wheels_.setForwardAll();
-    wheels_.ajustPWM(WHEELS_FAST_LEFT_WHEEL_ADJUSTMENT,WHEELS_FAST);
+    wheels_.ajustPWM(WHEELS_FAST,WHEELS_FAST);
     _delay_ms(DELAY_BEFORE_CORRECTION_READING);
     value = can_.lecture(PA3);
     value = value >> NOT_SIGNIFICANT_BITS;
-    while (value < maxValueRead_){
-        wheels_.setBackwardRight();
-        wheels_.setForwardLeft();
-        wheels_.ajustPWM(WHEELS_SLOW,WHEELS_SLOW);
-        _delay_ms(DELAY_BEFORE_OTHER_READING);
-        value = can_.lecture(PA3);
-        value = value >> NOT_SIGNIFICANT_BITS;
-        wheels_.ajustPWM(WHEELS_OFF,WHEELS_OFF);
+    uint16_t increment = 0;
+    while ((value+1 < maxValueRead_) && (increment < 1250) ){
+        if (increment < 500){
+           wheels_.setBackwardLeft();
+            wheels_.setForwardRight();
+            wheels_.ajustPWM(WHEELS_SLOW,WHEELS_SLOW);
+            _delay_ms(1);
+            value = can_.lecture(PA3);
+            value = value >> NOT_SIGNIFICANT_BITS;
+            wheels_.ajustPWM(WHEELS_OFF,WHEELS_OFF); 
+        }
+        else{
+            wheels_.setBackwardRight();
+            wheels_.setForwardLeft();
+            wheels_.ajustPWM(WHEELS_SLOW,WHEELS_SLOW);
+            _delay_ms(1);
+            value = can_.lecture(PA3);
+            value = value >> NOT_SIGNIFICANT_BITS;
+            wheels_.ajustPWM(WHEELS_OFF,WHEELS_OFF); 
+        }
+        increment++;
+        
     }
     _delay_ms(DELAY_PREVENT_CAR_SLIDING);
 
@@ -239,28 +266,32 @@ void Detection::searchPole(){
     
     // Trouve Pole - Doit retourner la distance au pole (1 ou 2)
     uint8_t poleDistance = findPolePosition();
-    while (poleDistance == NO_POLE_FOUND){
-        wheels_.setBackwardLeft();
-        wheels_.setForwardRight();
-        wheels_.ajustPWM(WHEELS_HALF_SPEED,WHEELS_HALF_SPEED);
-        _delay_ms(DELAY_BEFORE_OTHER_READING);
-        poleDistance = findPolePosition();
-    }
+    // while (poleDistance == NO_POLE_FOUND){
+    //     wheels_.setBackwardLeft();
+    //     wheels_.setForwardRight();
+    //     wheels_.ajustPWM(WHEELS_HALF_SPEED,WHEELS_HALF_SPEED);
+    //     _delay_ms(DELAY_BEFORE_OTHER_READING);
+    //     poleDistance = findPolePosition();
+    // }
     wheels_.ajustPWM(WHEELS_OFF,WHEELS_OFF);
     
-    uint16_t value = can_.lecture(PA3);
-    maxValueRead_ = value >> NOT_SIGNIFICANT_BITS;
+    //uint16_t value = can_.lecture(PA3);
+    //maxValueRead_ = value >> NOT_SIGNIFICANT_BITS;
     savePole(poleDistance); // Sauvegarde position Pole
     // Avance vers Pole
     uint8_t timesMoved = 0;
-    while ((maxValueRead_ < MIN_VALUE_ONE_HORIZONTAL)){
+    do{
         moveToPole();
         led_.turnLedAmber();
-        if (timesMoved > 6){
-            break;
-        }
         timesMoved++;
-    }
+    } while ((maxValueRead_ < MIN_VALUE_ONE_HORIZONTAL) && (timesMoved <= 200));
+        
+        
+        // if (timesMoved > 200){
+        //     break;
+        // }>
+        //timesMoved++;
+    
     wheels_.ajustPWM(WHEELS_OFF,WHEELS_OFF);
     for (uint8_t i = 0; i<3;i++){
         piezo_.playSound(81);
@@ -288,6 +319,7 @@ void Detection::executeDetectionState(){
     while(!hasFoundNoPole_){
         led_.turnLedAmber();
         if(gButtonPressed){
+            facingDirection_ = NORTH;
             EIMSK &= ~(1 << INT2);
             searchPole();
             gButtonPressed = 0;
@@ -329,7 +361,12 @@ sei ();
 void startDetecting(){
     initialisation();
     Detection detect;
+    //detect.findPolePosition();
     detect.executeDetectionState();
     detect.writePolesInMemory();
     detect.declareFinish();
+    // PWM wheels;
+    // wheels.setBackwardRight();
+    // wheels.setForwardLeft();
+    // wheels.ajustPWM(WHEELS_FAST,WHEELS_FAST);
 }

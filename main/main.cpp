@@ -5,9 +5,8 @@
 enum class Robot{INIT,DETECTION,TRANSMISSION};
 
 
-void executeTransmission() {
-    Transmission transmission; 
-    transmission.generateSVG(); 
+void executeTransmission(Transmission& trans) {
+    trans.generateSVG(); 
 }
 void executeDetection() {
     // Code pour execute la classe de detection 
@@ -24,7 +23,7 @@ void switchState(Robot& stateRobot) {
         case Robot::INIT: 
             if (isButtonPressed(&PINB,PINB2)) {
                 while(isButtonPressed(&PINB,PINB2)){}
-                stateRobot = Robot::DETECTION;  
+                stateRobot = Robot::DETECTION;
             }
             else if (!(isButtonPressed(&PINC,PINC6))) {
                 while(!(isButtonPressed(&PINC,PINC6))){}
@@ -33,14 +32,14 @@ void switchState(Robot& stateRobot) {
             break; 
         case Robot::DETECTION: break; 
         case Robot::TRANSMISSION: break; 
-    }   
+    }
 }
 
-void executeState(Robot& stateRobot) {
+void executeState(Robot& stateRobot, Transmission& trans) {
     switch (stateRobot) {
         case Robot::INIT: executeINIT(); break; 
         case Robot::DETECTION: executeDetection(); break; 
-        case Robot::TRANSMISSION: executeTransmission(); break; 
+        case Robot::TRANSMISSION: executeTransmission(trans); break; 
     }
 }
 
@@ -49,9 +48,11 @@ int main(){
     Robot robot = Robot::INIT;
     DDRC &= ~(1<<PB2) & ~(1<<PC6);
 
+    Transmission trans; 
+
     while (true) {
         switchState(robot);
-        executeState(robot);
+        executeState(robot, trans);
     }
     Led led {&PORTA,&DDRA,PA0,PA1};
     led.turnLedRed();

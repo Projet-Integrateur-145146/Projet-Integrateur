@@ -1,7 +1,9 @@
 #include "transmission.h"
 
 Transmission::Transmission() {
-     memoire.initialisationUART();     
+     memoire.initialisationUART(); 
+    //  uint8_t motEcrit[32] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0,0,0,0,0,0,0,1, 0, 1};
+    //  memoire.ecriture(0, motEcrit, 32);    
      // On fait la lecture de EEPROM et on remplie data 
      memoire.lecture(0, data, 32);
      for (uint8_t i = 0; i < 32; i++) {
@@ -263,11 +265,11 @@ void Transmission::transmissionTableau(const char* dataSVG) {
 }
 
 void Transmission::transmettreUint32(uint32_t value) {
-    const char hexDigits[] = "0123456789abcdef";
+    uint8_t hexDigits[] = "0123456789abcdef";
 
     for (int i = 0; i < 8; ++i) {
-        uint8_t hexDigitIndex = (value >> (4 * (7 - i))) & 0xF;
-        char hexDigit = hexDigits[hexDigitIndex];
+        uint8_t hexDigitIndex = (value >> (4 * (7 - i))) & 0xf;
+        uint8_t hexDigit = hexDigits[hexDigitIndex];
         memoire.transmissionUART(hexDigit);
     }
 }
@@ -280,7 +282,7 @@ void Transmission::transmissionAndUpdtateCRC(uint8_t charactere) {
 }
 
 //-------------------------Calcul CRC 32--------------------------------
-// Code tiré du site: https://www.carnetdumaker.net/articles/les-sommes-de-controle/
+// Code tirÃ© du site: https://www.carnetdumaker.net/articles/les-sommes-de-controle/
 
 
 void Transmission::updateCRC(uint8_t data_byte) {
