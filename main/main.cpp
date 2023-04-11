@@ -3,11 +3,33 @@
 #include "detection.hpp"
 
 enum class Robot{INIT,DETECTION,TRANSMISSION};
+Led led{&PORTB,&DDRB,PB2,PA3};
+Timer timer; 
 
+volatile bool ledOn = false; 
+
+ISR(TIMER1_COMPA_vect) {
+    if (!ledOn) {
+        ledOn = true; 
+        led.turnLedGreen(); 
+    }
+    else {
+        ledOn = false; 
+        led.turnLedOff(); 
+    }
+}
 
 void executeTransmission(Transmission& trans) {
-    trans.generateSVG(); 
+    led.turnLedGreen();
+    _delay_ms(2000); 
+    led.turnLedOff();  
+    sei(); 
+    timer.timerOneCTC1024(390); 
+    trans.generateSVG();
+    cli();
+    led.turnLedOff(); 
 }
+
 void executeDetection() {
     // Code pour execute la classe de detection 
     startDetecting();
@@ -31,7 +53,7 @@ void switchState(Robot& stateRobot) {
             } 
             break; 
         case Robot::DETECTION: break; 
-        case Robot::TRANSMISSION: break; 
+        case Robot::TRANSMISSION: stateRobot = Robot::INIT; break; 
     }
 }
 
@@ -54,6 +76,4 @@ int main(){
         switchState(robot);
         executeState(robot, trans);
     }
-    Led led {&PORTA,&DDRA,PA0,PA1};
-    led.turnLedRed();
 }

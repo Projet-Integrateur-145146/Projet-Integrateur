@@ -2,6 +2,7 @@
 
 #include <Bouton/button.h>
 #include <Led/led.hpp>
+#include <Timer/timer.hpp>
 #include <avr/io.h>
 #include <util/twi.h>
 #include <util/delay.h> 
