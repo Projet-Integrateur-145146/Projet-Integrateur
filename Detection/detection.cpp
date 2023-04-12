@@ -69,6 +69,42 @@ void Detection::savePole(uint8_t poleDistance){
 
 }
 
+void Detection::getValuePole(){
+   uint8_t value; 
+   uint8_t pos = PA3;
+   Memoire24CXXX Scan;
+   can can_ ;
+   while(!(PINB & (1<<PINB2))){
+     }
+    value = can_.lecture(pos);
+    value = value >> NOT_SIGNIFICANT_BITS ;
+    Scan.ecriture(0, (uint8_t*)value, 7);
+}
+
+void Detection::readValue(){
+    uint8_t readValue;
+    void initialisationUART(void);
+    Memoire24CXXX Scan;
+    // Lire la memoire et afficher à l'aide de SerieViaUSB
+    uint8_t i = 1;  
+    while(!(PINC & (1<<PINC6))){
+       
+    }
+    Scan.lecture(i, &readValue);
+    char buffer[6]; // As uint16_t is maximum 5 characters, plus one for the null terminator
+    sprintf(buffer, "%u ", readValue);
+    const char* str_value = buffer;
+    _delay_ms(10);
+    printDebug(str_value);
+    _delay_ms(10);
+
+    // do {
+    //         Scan.lecture(i, &readValue);
+    //         Scan.transmissionUART(readValue);
+    //         i++; 
+    //     }while(readValue != 0xFF);
+}
+
 uint8_t Detection::findPolePosition(){
     uint16_t value;
     uint8_t pos = PA3;
@@ -332,4 +368,6 @@ int main(){
     detect.executeDetectionState();
     detect.writePolesInMemory();
     detect.declareFinish();
+    // detect.getValuePole();
+    // detect.readValue();
 }
