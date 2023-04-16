@@ -88,14 +88,16 @@ uint8_t Detection::findPolePosition(){
         // printDebug(str_value);
         //_delay_ms(10);
         if (value < MIN_VALUE_TWO_DIAGONAL){
-            return 0;
+            
+            return NO_POLE_FOUND;
+            led_.turnLedRed();
         }
 
         if((value >= MIN_VALUE_TWO_DIAGONAL) && (value <= MAX_VALUE_TWO_DIAGONAL)){
             // sprintf(buff,"Robot à 2 poteaux diagonale %u\n",value);
             // const char* str_pot = buff;
             // printDebug(str_pot);
-            maxValueRead_ = value;
+            //maxValueRead_ = value;
             return TWO_SPACES_AWAY;
             led_.turnLedGreen();
         }
@@ -103,7 +105,7 @@ uint8_t Detection::findPolePosition(){
             // sprintf(buff,"Robot à 2 poteaux tout droit%u\n",value);
             // const char* str_pot = buff;
             // printDebug(str_pot);
-            maxValueRead_ = value;
+            //maxValueRead_ = value;
             return TWO_SPACES_AWAY;
             
             led_.turnLedOff();
@@ -112,7 +114,7 @@ uint8_t Detection::findPolePosition(){
             // sprintf(buff,"Robot à 1 poteau tout droit%u\n",value);
             // const char* str_pot = buff;
             // printDebug(str_pot);
-            maxValueRead_ = value;
+            //maxValueRead_ = value;
             return ONE_SPACE_AWAY;
             led_.turnLedOff();
         }
@@ -120,16 +122,16 @@ uint8_t Detection::findPolePosition(){
             // sprintf(buff,"Robot à 1 poteau diagonale%u\n",value);
             // const char* str_pot = buff;
             // printDebug(str_pot);
-            maxValueRead_ = value;
+            //maxValueRead_ = value;
             return ONE_SPACE_AWAY;
-            led_.turnLedRed();
+            led_.turnLedOff();
         }
 
         else{
             return NO_POLE_FOUND;
-            led_.turnLedOff();
-            }
-       // }
+            //led_.turnLedOff();
+        }
+       //}
 
         // printDebug(space);
         // sprintf(buff,"Robot à 2 poteaux diagonale %u\n",value);
@@ -200,6 +202,7 @@ void Detection::moveToPole(){
     uint16_t value = can_.lecture(PA3);
     value = value >> NOT_SIGNIFICANT_BITS;
     if (value >= MIN_VALUE_ONE_HORIZONTAL){
+        maxValueRead_ = value;
         return;
     }
 
@@ -209,9 +212,9 @@ void Detection::moveToPole(){
     value = can_.lecture(PA3);
     value = value >> NOT_SIGNIFICANT_BITS;
     uint16_t increment = 0;
-    while ((value+1 < maxValueRead_) && (increment < 1250) ){
+    while ((value+2 < maxValueRead_) && (increment < 1250) ){
         if (increment < 500){
-           wheels_.setBackwardLeft();
+            wheels_.setBackwardLeft();
             wheels_.setForwardRight();
             wheels_.ajustPWM(WHEELS_SLOW,WHEELS_SLOW);
             _delay_ms(1);
@@ -222,11 +225,14 @@ void Detection::moveToPole(){
         else{
             wheels_.setBackwardRight();
             wheels_.setForwardLeft();
-            wheels_.ajustPWM(WHEELS_SLOW,WHEELS_SLOW);
+            wheels_.ajustPWM(75,75);
             _delay_ms(1);
             value = can_.lecture(PA3);
             value = value >> NOT_SIGNIFICANT_BITS;
             wheels_.ajustPWM(WHEELS_OFF,WHEELS_OFF); 
+        }
+        if (increment == 1249){
+            increment = 0;
         }
         increment++;
         
@@ -266,31 +272,48 @@ void Detection::searchPole(){
     
     // Trouve Pole - Doit retourner la distance au pole (1 ou 2)
     uint8_t poleDistance = findPolePosition();
-    // while (poleDistance == NO_POLE_FOUND){
-    //     wheels_.setBackwardLeft();
-    //     wheels_.setForwardRight();
-    //     wheels_.ajustPWM(WHEELS_HALF_SPEED,WHEELS_HALF_SPEED);
-    //     _delay_ms(DELAY_BEFORE_OTHER_READING);
-    //     poleDistance = findPolePosition();
-    // }
+    uint16_t increment = 0;
+    while ((poleDistance == NO_POLE_FOUND) && (increment < 1250) ){
+        if (increment < 500){
+            wheels_.setBackwardLeft();
+            wheels_.setForwardRight();
+            wheels_.ajustPWM(WHEELS_SLOW,WHEELS_SLOW);
+            _delay_ms(1);
+            poleDistance = findPolePosition();
+            wheels_.ajustPWM(WHEELS_OFF,WHEELS_OFF); 
+        }
+        else{
+            wheels_.setBackwardRight();
+            wheels_.setForwardLeft();
+            wheels_.ajustPWM(75,75);
+            _delay_ms(1);
+            poleDistance = findPolePosition();
+            wheels_.ajustPWM(WHEELS_OFF,WHEELS_OFF); 
+        }
+        if (increment == 1249){
+            increment = 0;
+        }
+        increment++;
+        
+    }
     wheels_.ajustPWM(WHEELS_OFF,WHEELS_OFF);
     
     //uint16_t value = can_.lecture(PA3);
     //maxValueRead_ = value >> NOT_SIGNIFICANT_BITS;
     savePole(poleDistance); // Sauvegarde position Pole
     // Avance vers Pole
-    uint8_t timesMoved = 0;
+    //uint8_t timesMoved = 0;
     do{
         moveToPole();
         led_.turnLedAmber();
-        timesMoved++;
-    } while ((maxValueRead_ < MIN_VALUE_ONE_HORIZONTAL) && (timesMoved <= 200));
+        //timesMoved++;
+    } while ((maxValueRead_ < MIN_VALUE_ONE_HORIZONTAL) /*&& (timesMoved <= 200)*/);
         
         
         // if (timesMoved > 200){
         //     break;
         // }>
-        //timesMoved++;
+        // timesMoved++;
     
     wheels_.ajustPWM(WHEELS_OFF,WHEELS_OFF);
     for (uint8_t i = 0; i<3;i++){

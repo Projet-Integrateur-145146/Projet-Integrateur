@@ -54,6 +54,8 @@ public:
     void moveToPole();
     void writePolesInMemory();
     void declareFinish();
+    void getValuePole();
+    void readValue();
 private:
     uint8_t nbPoles_;
     uint8_t facingDirection_; 
