@@ -3,21 +3,22 @@
 Transmission::Transmission() {
     memoire.initialisationUART();    
 
-/*
-    uint8_t motEcrit[32] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    motEcrit[11] = 1; 
-    motEcrit[13] = 1; 
-    motEcrit[18] = 1; 
-   motEcrit[19] = 1;
-    motEcrit[29] = 1; 
-    memoire.ecriture(0, motEcrit, 32);    
-*/
+
+    //uint8_t data[32] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    data[11] = 1; 
+    data[13] = 1; 
+    data[18] = 1; 
+    data[19] = 1;
+    data[29] = 1; 
+    memoire.ecriture(0, data, 32);    
+
     // On fait la lecture de EEPROM et on remplie data 
-    memoire.lecture(0, data, 32);
-    for (uint8_t i = 0; i < 32; i++) {
-       if (data[i] == 1)
-           numberOfPoints++;
-    }
+    // memoire.lecture(0, data, 32);
+    // for (uint8_t i = 0; i < 32; i++) {
+    //    if (data[i] == 1)
+    //        numberOfPoints++;
+    // }
+    numberOfPoints = 5;
 }
 
 float Transmission::returnValue(CustomPair p1, CustomPair p2, CustomPair p) {

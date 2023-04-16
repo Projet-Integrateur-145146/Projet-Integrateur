@@ -32,7 +32,7 @@ void executeTransmission(Transmission& trans) {
 
 void executeDetection() {
     // Code pour execute la classe de detection 
-    startDetecting();
+    //startDetecting();
 }
 
 void executeINIT() {return ;}
