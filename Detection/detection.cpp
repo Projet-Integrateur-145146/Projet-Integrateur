@@ -70,15 +70,19 @@ void Detection::savePole(uint8_t poleDistance){
 }
 
 void Detection::getValuePole(){
-   uint8_t value; 
+   uint16_t value; 
    uint8_t pos = PA3;
    Memoire24CXXX Scan;
    can can_ ;
    while(!(PINB & (1<<PINB2))){
      }
+    Led led{&PORTA,&DDRA,PA0,PA1};
+    led.turnLedGreen();
     value = can_.lecture(pos);
     value = value >> NOT_SIGNIFICANT_BITS ;
-    Scan.ecriture(0, (uint8_t*)value, 7);
+    uint8_t value8 = value;
+    uint8_t* ptr = &value8;
+    Scan.ecriture(0, ptr, 1);
 }
 
 void Detection::readValue(){
@@ -86,12 +90,14 @@ void Detection::readValue(){
     void initialisationUART(void);
     Memoire24CXXX Scan;
     // Lire la memoire et afficher à l'aide de SerieViaUSB
-    uint8_t i = 1;  
-    while(!(PINC & (1<<PINC6))){
+    uint8_t i = 0;  
+    while((PINC & (1<<PINC6))){
        
     }
-    Scan.lecture(i, &readValue);
-    char buffer[6]; // As uint16_t is maximum 5 characters, plus one for the null terminator
+    Led led{&PORTA,&DDRA,PA0,PA1};
+    led.turnLedOff();
+    Scan.lecture(i, &readValue,1);
+    char buffer[10]; // As uint16_t is maximum 5 characters, plus one for the null terminator
     sprintf(buffer, "%u ", readValue);
     const char* str_value = buffer;
     _delay_ms(10);
@@ -365,9 +371,11 @@ sei ();
 int main(){
     initialisation();
     Detection detect;
-    detect.executeDetectionState();
-    detect.writePolesInMemory();
-    detect.declareFinish();
-    // detect.getValuePole();
-    // detect.readValue();
+    // detect.executeDetectionState();
+    // detect.writePolesInMemory();
+    // detect.declareFinish();
+    Led led{&PORTA,&DDRA,PA0,PA1};
+    led.turnLedRed();
+    detect.getValuePole();
+    detect.readValue();
 }

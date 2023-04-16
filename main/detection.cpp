@@ -3,19 +3,19 @@
 volatile uint8_t gButtonPressed = 0;
 
 ISR (INT2_vect) {
-_delay_ms ( 30 );
+    _delay_ms ( 30 );
 
-if (PINB & (1<<PINB2)){
-    gButtonPressed = 1;
-}
-EIFR |= (1 << INTF2) ;
+    if (PINB & (1<<PINB2)){
+        gButtonPressed = 1;
+    }
+    EIFR |= (1 << INTF2) ;
 }
 
 Detection::Detection() : positionsWithPole_{}{
     nbPoles_ = 0;
-    currentPosition_ = 0;
-    numberOfGoodReadings_ = 0;
+    currentPosition_ = 0;;
     hasFoundNoPole_ = false;
+    maxValueRead_ = 0;
     DDRA &= ~(1 << PA3); // configure le port PD3 en mode entrée
 };
 
@@ -146,18 +146,78 @@ bool Detection::findPole(){
     value = can_.lecture(pos);
     value = value >> NOT_SIGNIFICANT_BITS;
     if ((value >= MIN_VALUE_TWO_DIAGONAL)){
-        numberOfGoodReadings_++;
-    }
+        if (isOnTable()){
+            return true;
+        }
 
-    else{
-        return false;
     }
-    
-    if (numberOfGoodReadings_ >= MIN_NUMBER_GOOD_READINGS){
-        return true;
+    return false;
+}
+
+bool Detection::isOnTable(){
+    switch(facingDirection_){
+        case NORTH:
+            if ((currentPosition_+8) >= 32){
+                return false;
+            }
+            return true;
+            break;
+        case SOUTH:
+            if (currentPosition_ >= 8){
+                return true;
+            }
+            return false;
+            break;
+        case EAST:
+            if (currentPosition_ == 7 || currentPosition_ == 15 || currentPosition_ == 23 || currentPosition_ == 31){
+                return false;
+            }
+            return true;
+            break;
+        case WEST:
+            if (currentPosition_ == 0 || currentPosition_ == 8 || currentPosition_ == 16 || currentPosition_ == 24){
+                return false;
+            }
+            return true;
+            break;
+        case SOUTH_EAST:
+            if (currentPosition_ <=7){
+                return false;
+            }
+            if (currentPosition_ == 15 || currentPosition_ == 23 || currentPosition_ == 31){
+                return false;
+            }
+            return true;
+            break;
+        case SOUTH_WEST:
+            if (currentPosition_ <=7){
+                return false;
+            }
+            if (currentPosition_ == 8 || currentPosition_ == 16 || currentPosition_ == 24){
+                return false;
+            }
+            return true;
+            break;
+        case NORTH_WEST:
+            if (currentPosition_ >= 24){
+                return false;
+            }
+            if (currentPosition_ == 0 || currentPosition_ == 8 || currentPosition_ == 16){
+                return false;
+            }
+            return true;
+            break;
+        case NORTH_EAST:
+            if (currentPosition_ >= 23){
+                return false;
+            }
+            if (currentPosition_ == 7 || currentPosition_ == 15){
+                return false;
+            }
+            return true;
+            break;
     }
-    
-    return ((value >= MIN_VALUE_TWO_DIAGONAL) && findPole());
+    return false;
 }
 
 bool Detection::turn45Right(){
@@ -166,10 +226,11 @@ bool Detection::turn45Right(){
     wheels_.setForwardLeft();
     wheels_.ajustPWM(WHEELS_FAST,WHEELS_FAST);
     while (numberOfTimes < NUMBER_READINGS_PREVIOUS_FACING_DIRECTION){
-        numberOfGoodReadings_ = 0;
         if (findPole()){
-            wheels_.ajustPWM(WHEELS_OFF, WHEELS_OFF);
-            return true;
+            if (isOnTable()){
+                wheels_.ajustPWM(WHEELS_OFF, WHEELS_OFF);
+                return true;
+            }
         }
         _delay_ms(DELAY_BETWEEN_READINGS);
         numberOfTimes++;
@@ -184,7 +245,6 @@ bool Detection::turn45Right(){
     }
     
     while (numberOfTimes < NUMBER_READINGS_CURRENT_FACING_DIRECTION){
-        numberOfGoodReadings_ = 0;
         if (findPole()){
             wheels_.ajustPWM(WHEELS_OFF, WHEELS_OFF);
             return true;
@@ -212,31 +272,33 @@ void Detection::moveToPole(){
     value = can_.lecture(PA3);
     value = value >> NOT_SIGNIFICANT_BITS;
     uint16_t increment = 0;
-    while ((value+2 < maxValueRead_) && (increment < 1250) ){
-        if (increment < 500){
+    while ((value+1 < maxValueRead_) && (increment < 250) ){
+        led_.turnLedAmber();
+        if (increment < 75){
             wheels_.setBackwardLeft();
             wheels_.setForwardRight();
-            wheels_.ajustPWM(WHEELS_SLOW,WHEELS_SLOW);
-            _delay_ms(1);
+            wheels_.ajustPWM(50,50);
+            //_delay_ms(1);
             value = can_.lecture(PA3);
             value = value >> NOT_SIGNIFICANT_BITS;
-            wheels_.ajustPWM(WHEELS_OFF,WHEELS_OFF); 
+            //wheels_.ajustPWM(WHEELS_OFF,WHEELS_OFF); 
         }
         else{
             wheels_.setBackwardRight();
             wheels_.setForwardLeft();
-            wheels_.ajustPWM(75,75);
-            _delay_ms(1);
+            wheels_.ajustPWM(50,50);
+            //_delay_ms(1);
             value = can_.lecture(PA3);
             value = value >> NOT_SIGNIFICANT_BITS;
-            wheels_.ajustPWM(WHEELS_OFF,WHEELS_OFF); 
+            //wheels_.ajustPWM(WHEELS_OFF,WHEELS_OFF); 
         }
-        if (increment == 1249){
+        if (increment == 249){
             increment = 0;
         }
         increment++;
         
     }
+    wheels_.ajustPWM(WHEELS_OFF,WHEELS_OFF); 
     _delay_ms(DELAY_PREVENT_CAR_SLIDING);
 
 
@@ -274,21 +336,22 @@ void Detection::searchPole(){
     uint8_t poleDistance = findPolePosition();
     uint16_t increment = 0;
     while ((poleDistance == NO_POLE_FOUND) && (increment < 1250) ){
+        led_.turnLedAmber();
         if (increment < 500){
             wheels_.setBackwardLeft();
             wheels_.setForwardRight();
-            wheels_.ajustPWM(WHEELS_SLOW,WHEELS_SLOW);
-            _delay_ms(1);
+            wheels_.ajustPWM(50,50);
+            //_delay_ms(1);
             poleDistance = findPolePosition();
-            wheels_.ajustPWM(WHEELS_OFF,WHEELS_OFF); 
+            //wheels_.ajustPWM(WHEELS_OFF,WHEELS_OFF); 
         }
         else{
             wheels_.setBackwardRight();
             wheels_.setForwardLeft();
-            wheels_.ajustPWM(75,75);
-            _delay_ms(1);
+            wheels_.ajustPWM(50,50);
+            //_delay_ms(1);
             poleDistance = findPolePosition();
-            wheels_.ajustPWM(WHEELS_OFF,WHEELS_OFF); 
+            //wheels_.ajustPWM(WHEELS_OFF,WHEELS_OFF); 
         }
         if (increment == 1249){
             increment = 0;
@@ -317,7 +380,7 @@ void Detection::searchPole(){
     
     wheels_.ajustPWM(WHEELS_OFF,WHEELS_OFF);
     for (uint8_t i = 0; i<3;i++){
-        piezo_.playSound(81);
+        piezo_.playSound(77);
         _delay_ms(300);
         piezo_.stopSound();
         _delay_ms(300);
@@ -342,6 +405,8 @@ void Detection::executeDetectionState(){
     while(!hasFoundNoPole_){
         led_.turnLedAmber();
         if(gButtonPressed){
+            _delay_ms(1500);
+            maxValueRead_ = 0;
             facingDirection_ = NORTH;
             EIMSK &= ~(1 << INT2);
             searchPole();
@@ -349,7 +414,13 @@ void Detection::executeDetectionState(){
             EIMSK |= (1 << INT2);
         }
     }
-    //findPolePosition();
+    // //findPolePosition();
+//     while(true){
+//         led_.turnLedAmber();
+//         wheels_.setBackwardLeft();
+//         wheels_.setBackwardRight();
+//         wheels_.ajustPWM(20,20);
+//     }
 };
 
 void Detection::writePolesInMemory(){

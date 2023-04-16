@@ -3,7 +3,7 @@
 #include "detection.hpp"
 
 enum class Robot{INIT,DETECTION,TRANSMISSION};
-Led led{&PORTB,&DDRB,PB2,PA3};
+Led led{&PORTA,&DDRA,PA0,PA1};
 Timer timer; 
 
 volatile bool ledOn = false; 
@@ -71,6 +71,7 @@ int main(){
     DDRC &= ~(1<<PB2) & ~(1<<PC6);
 
     Transmission trans; 
+    //led.turnLedGreen();
 
     while (true) {
         switchState(robot);
