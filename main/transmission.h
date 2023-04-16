@@ -40,16 +40,17 @@ class Transmission
 public: 
     Transmission();
 
-    float returnValue(CustomPair p1, CustomPair p2, CustomPair p);
+
+    int16_t returnValue(CustomPair p1, CustomPair p2, CustomPair p);
 
     // Returns the side of point p with respect to line
     // joining points p1 and p2.
-    float findSide(CustomPair p1, CustomPair p2, CustomPair p);
+    int16_t findSide(CustomPair p1, CustomPair p2, CustomPair p);
         
     // returns a value proportional to the distance
     // between the point p and the line joining the
     // points p1 and p2
-    float lineDist(CustomPair p1, CustomPair p2, CustomPair p);
+    int16_t lineDist(CustomPair p1, CustomPair p2, CustomPair p);
 
     bool checkIfExist(CustomPair hull[], CustomPair p);
 
@@ -84,7 +85,6 @@ public:
     void generateHeader();
 
     uint16_t getAire();
-
     // Generates the end of the svg file
     void generateEnd();
     void transmettreFloat(uint16_t value);
@@ -101,7 +101,7 @@ public:
 
 private: 
     Memoire24CXXX memoire; 
-    uint8_t data[SIZE_DATA] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0,0,0,0,0,0,0,1,0,0}; //fait
+    uint8_t data[SIZE_DATA] = {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0,0,0,0,0,0,0,1,0,0}; //fait
     uint8_t numberOfPoints = 5;  //fait
     CustomPair arrayOfPairs[8]; 
     uint8_t compteurPair = 0;

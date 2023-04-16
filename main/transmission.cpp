@@ -22,25 +22,30 @@ Transmission::Transmission() {
     */
 }
 
-float Transmission::returnValue(CustomPair p1, CustomPair p2, CustomPair p) {
+
+
+int16_t Transmission::returnValue(CustomPair p1, CustomPair p2, CustomPair p) {
     return  (p.second - p1.second) * (p2.first - p1.first) -
             (p2.second - p1.second) * (p.first - p1.first);
 }
 
 // Renvoie le côté du point p par rapport à la ligne
 // reliant les points p1 et p2.
-float Transmission::findSide(CustomPair p1, CustomPair p2, CustomPair p)
+int16_t Transmission::findSide(CustomPair p1, CustomPair p2, CustomPair p)
 {
-    float val = returnValue(p1, p2, p);
+    int16_t val = returnValue(p1, p2, p);
     return val > 0 ? 1 : (val < 0 ? -1 : 0);
 }
     
 // Renvoie une valeur proportionnelle à la distance
 // entre le point p et la ligne reliant les
 // points p1 et p2
-float Transmission::lineDist(CustomPair p1, CustomPair p2, CustomPair p)
+int16_t Transmission::lineDist(CustomPair p1, CustomPair p2, CustomPair p)
 {
-    return fabs(returnValue(p1, p2, p));
+    int16_t v = returnValue(p1, p2, p);  
+    if (v < 0)
+        return -1 * v; 
+    return v;  
 }
     
 // Methode pour chercher si le point p existe dans le tableau 
@@ -61,7 +66,7 @@ void Transmission::quickHull(CustomPair a[], uint8_t n, CustomPair p1, CustomPai
     // Trouve le point avec la distance maximum
     for (uint8_t i=0; i<n; i++)
     {
-        float temp = lineDist(p1, p2, a[i]);
+        int16_t temp = lineDist(p1, p2, a[i]);
         if (findSide(p1, p2, a[i]) == side && temp > max_dist)
         {
             ind = i;
@@ -231,7 +236,7 @@ uint16_t Transmission::getAire() {
 
 // Genere la fin du SVG
 void Transmission::generateEnd() {
-    uint16_t aire = getAire(); 
+    float aire = getAire(); 
     transmissionTableau("<text x=\"96\" y=\"36\" font-family=\"arial\" font-size=\"20\" fill=\"blue\">section 06 -- equipe 145146 -- VROUMY</text>");     
     transmissionTableau("<text x=\"96\" y=\"552\" font-family=\"arial\" font-size=\"20\" fill=\"blue\"> AIRE: "); 
     transmettreFloat(aire);
