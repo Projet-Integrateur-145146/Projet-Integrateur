@@ -12,6 +12,14 @@
 #define GAP_CIRCLES_Y 110
 #define HEIGHT 576 
 #define M_PI   3.14159265358979323846 /* pi */
+#define POLYNOME 0xEDB88320
+#define CRC_START_VALUE 0xFFFFFFFF
+#define DEBUT 0x02 
+#define TRANSMISSION_CRC 0x03 
+#define FIN 0x04
+#define NB_BYTES_CRC 8
+#define BITSHIFT 1
+#define OFFSET_PIXELS 110
 
 struct CustomPair {
     float first;
