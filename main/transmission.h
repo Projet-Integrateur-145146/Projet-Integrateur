@@ -40,25 +40,11 @@ class Transmission
 public: 
     Transmission();
 
-
-    int16_t returnValue(CustomPair p1, CustomPair p2, CustomPair p);
-
-    // Returns the side of point p with respect to line
-    // joining points p1 and p2.
-    int16_t findSide(CustomPair p1, CustomPair p2, CustomPair p);
-        
-    // returns a value proportional to the distance
-    // between the point p and the line joining the
-    // points p1 and p2
-    int16_t lineDist(CustomPair p1, CustomPair p2, CustomPair p);
-
-    bool checkIfExist(CustomPair hull[], CustomPair p);
-
-    // End points of line L are p1 and p2. side can have value
-    // 1 or -1 specifying each of the parts made by the line L
-    void quickHull(CustomPair a[], uint8_t n, CustomPair p1, CustomPair p2, int16_t side);
-        
-    void printHull(CustomPair a[], uint8_t n);
+    void grahamScan(CustomPair points[], uint8_t n, CustomPair hull[], uint8_t &hullSize);
+    int16_t crossProduct(CustomPair &O, CustomPair &A, CustomPair &B);
+    void swapCustomPair(CustomPair &a, CustomPair &b);
+    int32_t squaredDistance(CustomPair &a, CustomPair &b);
+    bool comparePolarAngles(CustomPair &a, CustomPair &b, CustomPair &p0);
 
     void calculatePos(uint8_t index);
     void findPos();
@@ -101,7 +87,7 @@ public:
 
 private: 
     Memoire24CXXX memoire; 
-    uint8_t data[SIZE_DATA] = {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0,0,0,0,0,0,0,1,0,0}; //fait
+    uint8_t data[SIZE_DATA] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0,0,0,0,0,0,0,1,0,0}; //fait
     uint8_t numberOfPoints = 5;  //fait
     CustomPair arrayOfPairs[8]; 
     uint8_t compteurPair = 0;

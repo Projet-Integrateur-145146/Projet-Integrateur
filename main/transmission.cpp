@@ -22,93 +22,68 @@ Transmission::Transmission() {
     */
 }
 
-
-
-int16_t Transmission::returnValue(CustomPair p1, CustomPair p2, CustomPair p) {
-    return  (p.second - p1.second) * (p2.first - p1.first) -
-            (p2.second - p1.second) * (p.first - p1.first);
+int16_t Transmission::crossProduct(CustomPair &O, CustomPair &A, CustomPair &B) {
+    return (A.first - O.first) * (B.second - O.second) - (A.second - O.second) * (B.first - O.first);
 }
 
-// Renvoie le côté du point p par rapport à la ligne
-// reliant les points p1 et p2.
-int16_t Transmission::findSide(CustomPair p1, CustomPair p2, CustomPair p)
-{
-    int16_t val = returnValue(p1, p2, p);
-    return val > 0 ? 1 : (val < 0 ? -1 : 0);
+void Transmission::swapCustomPair(CustomPair &a, CustomPair &b) {
+    CustomPair temp = a;
+    a = b;
+    b = temp;
 }
-    
-// Renvoie une valeur proportionnelle à la distance
-// entre le point p et la ligne reliant les
-// points p1 et p2
-int16_t Transmission::lineDist(CustomPair p1, CustomPair p2, CustomPair p)
-{
-    int16_t v = returnValue(p1, p2, p);  
-    if (v < 0)
-        return -1 * v; 
-    return v;  
+
+int32_t Transmission::squaredDistance(CustomPair &a, CustomPair &b) {
+    int16_t dx = a.first - b.first;
+    int16_t dy = a.second - b.second;
+    return dx * dx + dy * dy;
 }
-    
-// Methode pour chercher si le point p existe dans le tableau 
-bool Transmission::checkIfExist(CustomPair hull[], CustomPair p) {
-    for (int i = 0; i < nElementsHull; i++) {
-            if (p == hull[i]) {
-                return true; 
+
+bool Transmission::comparePolarAngles(CustomPair &a, CustomPair &b, CustomPair &p0) {
+    int16_t cp = crossProduct(p0, a, b);
+    if (cp == 0) {
+        return squaredDistance(p0, a) <= squaredDistance(p0, b);
+    }
+    return cp > 0;
+}
+
+void Transmission::grahamScan(CustomPair points[], uint8_t n, CustomPair hull[], uint8_t &hullSize) {
+    // Find the lowest point
+    uint8_t minYIndex = 0;
+    for (uint8_t i = 1; i < n; i++) {
+        if (points[i].second < points[minYIndex].second || (points[i].second == points[minYIndex].second && points[i].first < points[minYIndex].first)) {
+            minYIndex = i;
+        }
+    }
+
+    // Swap the lowest point with the first element
+    swapCustomPair(points[0], points[minYIndex]);
+
+    // Sort the remaining points based on their polar angles with respect to the lowest point
+    CustomPair p0 = points[0];
+    for (uint8_t i = 1; i < n - 1; i++) {
+        uint8_t minIndex = i;
+        for (uint8_t j = i + 1; j < n; j++) {
+            if (comparePolarAngles(points[j], points[minIndex], p0)) {
+                minIndex = j;
             }
         }
-    return false; 
-}
+        swapCustomPair(points[i], points[minIndex]);
+    }
 
-void Transmission::quickHull(CustomPair a[], uint8_t n, CustomPair p1, CustomPair p2, int16_t side)
-{
-    int8_t ind = -1;
-    int16_t max_dist = 0;
-    
-    // Trouve le point avec la distance maximum
-    for (uint8_t i=0; i<n; i++)
-    {
-        int16_t temp = lineDist(p1, p2, a[i]);
-        if (findSide(p1, p2, a[i]) == side && temp > max_dist)
-        {
-            ind = i;
-            max_dist = temp;
+    // Initialize the convex hull with the first three points
+    hullSize = 0;
+    hull[hullSize++] = points[0];
+    hull[hullSize++] = points[1];
+    hull[hullSize++] = points[2];
+
+    // Process the remaining points
+    for (uint8_t i = 3; i < n; i++) {
+        // Remove points from the hull while they make a non-left turn
+        while (hullSize > 1 && crossProduct(hull[hullSize - 2], hull[hullSize - 1], points[i]) <= 0) {
+            hullSize--;
         }
+        hull[hullSize++] = points[i];
     }
-
-    if (ind == -1)
-    {
-        if (!checkIfExist(hull, p1)) 
-            hull[nElementsHull++] = p1; 
-        if (!checkIfExist(hull, p2))
-            hull[nElementsHull++] = p2;
-        return;
-    }
-
-    quickHull(a, n, a[ind], p1, -findSide(a[ind], p1, p2));
-    quickHull(a, n, a[ind], p2, -findSide(a[ind], p2, p1));
-}
-    
-// Implementation de https://en.wikipedia.org/wiki/Convex_hull_algorithms
-void Transmission::printHull(CustomPair a[], uint8_t n)
-{    
-    // Trouve les points avec les coord maximums
-    uint8_t min_x = 0, max_x = 0;
-    for (uint8_t i=1; i<n; i++)
-    {
-        if (a[i].first < a[min_x].first)
-            min_x = i;
-        if (a[i].first > a[max_x].first)
-            max_x = i;
-    }
-    
-    // Trouve récursivement les points de l'enveloppe convexe sur
-    // un côté de la ligne reliant a[min_x] et
-    // a[max_x]
-    quickHull(a, n, a[min_x], a[max_x], 1);
-    
-    // Trouve récursivement les points de l'enveloppe convexe sur
-    // l'autre côté de la ligne reliant a[min_x] et 
-    // a[max_x]
-    quickHull(a, n, a[min_x], a[max_x], -1);
 }
 
 // Calcule la position sur l'image 
@@ -294,7 +269,8 @@ void Transmission::generateSVG() {
     memoire.transmissionUART(DEBUT); 
     findPos(); 
     generateHeader(); 
-    printHull(arrayOfPairs, numberOfPoints);
+    //printHull(arrayOfPairs, numberOfPoints);
+    grahamScan(arrayOfPairs, numberOfPoints, hull, nElementsHull);
     generateLines(); 
     generateSquares(); 
     generateCircles();
