@@ -7,11 +7,18 @@
 #include <stdint.h>
 
 #define F_CPU 8000000UL
-#define SIZE_DATA 32
-#define GAP_CIRCLES_X 110
-#define GAP_CIRCLES_Y 110
-#define HEIGHT 576 
-#define M_PI   3.14159265358979323846 /* pi */
+#define M_PI 3.14159265358979323846
+
+const uint8_t SIZE_DATA = 32;
+const uint8_t GAP_CIRCLES_X = 110;
+const uint16_t HEIGHT = 576;
+const uint32_t POLYNOME = 0xEDB88320;
+const uint32_t CRC_START_VALUE = 0xFFFFFFFF;
+const uint8_t DEBUT = 0x02;
+const uint8_t TRANSMISSION_CRC = 0x03;
+const uint8_t FIN = 0x04;
+const uint8_t NB_BYTES_CRC = 8;
+const uint8_t BITSHIFT = 1;
 
 struct CustomPair {
     float first;
