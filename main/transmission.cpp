@@ -3,13 +3,15 @@
 Transmission::Transmission() {
     memoire.initialisationUART();    
 
-    //uint8_t motEcrit[32] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    //motEcrit[11] = 1; 
-    //motEcrit[13] = 1; 
-    //motEcrit[18] = 1; 
-    //motEcrit[29] = 1; 
+/*
+    uint8_t motEcrit[32] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    motEcrit[11] = 1; 
+    motEcrit[13] = 1; 
+    motEcrit[18] = 1; 
+   motEcrit[19] = 1;
+    motEcrit[29] = 1; 
     memoire.ecriture(0, motEcrit, 32);    
-
+*/
     // On fait la lecture de EEPROM et on remplie data 
     memoire.lecture(0, data, 32);
     for (uint8_t i = 0; i < 32; i++) {
@@ -108,7 +110,7 @@ void Transmission::calculatePos(uint8_t index) {
     float posY = index / 8;  
     CustomPair t;
     t.first = xInit + (GAP_CIRCLES_X * (posX)); 
-    t.second = HEIGHT - (yInit + (GAP_CIRCLES_Y * (posY))); 
+    t.second = HEIGHT - (yInit + (GAP_CIRCLES_X * (posY))); 
     arrayOfPairs[compteurPair++] = t; 
 }
 
@@ -202,9 +204,9 @@ void Transmission::generateSquares() {
             transmissionTableau("\" y=\"");  
             transmettreFloat(posY);
             transmissionTableau("\" width=\"5\" height=\"5\" stroke=\"black\" stroke-width=\"1\" fill=\"black\"/>"); 
-            posX += OFFSET_PIXELS;
+            posX += GAP_CIRCLES_X;
         }
-        posY += OFFSET_PIXELS; 
+        posY += GAP_CIRCLES_X; 
     }
 }
 
