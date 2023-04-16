@@ -21,8 +21,8 @@ const uint8_t NB_BYTES_CRC = 8;
 const uint8_t BITSHIFT = 1;
 
 struct CustomPair {
-    float first;
-    float second;
+    uint16_t first;
+    uint16_t second;
 
     friend bool operator==(const CustomPair a, const CustomPair b) {
         return a.first == b.first && a.second == b.second;
@@ -49,13 +49,13 @@ public:
     // returns a value proportional to the distance
     // between the point p and the line joining the
     // points p1 and p2
-    uint16_t lineDist(CustomPair p1, CustomPair p2, CustomPair p);
+    float lineDist(CustomPair p1, CustomPair p2, CustomPair p);
 
     bool checkIfExist(CustomPair hull[], CustomPair p);
 
     // End points of line L are p1 and p2. side can have value
     // 1 or -1 specifying each of the parts made by the line L
-    void quickHull(CustomPair a[], uint8_t n, CustomPair p1, CustomPair p2, int8_t side);
+    void quickHull(CustomPair a[], uint8_t n, CustomPair p1, CustomPair p2, int16_t side);
         
     void printHull(CustomPair a[], uint8_t n);
 
@@ -66,7 +66,7 @@ public:
     CustomPair getBarycenter();
 
     // Permet d'avoir l'angle d'un point par rapport au barycentre
-    float getAngle(CustomPair point, CustomPair barycenter); 
+    int16_t getAngle(CustomPair point, CustomPair barycenter); 
 
     void sortList();
 
@@ -83,12 +83,11 @@ public:
     // Generates the header of the svg file 
     void generateHeader();
 
-    float getAire();
+    uint16_t getAire();
 
     // Generates the end of the svg file
     void generateEnd();
-
-    void transmettreFloat(float value);
+    void transmettreFloat(uint16_t value);
 
     void transmissionTableau(const char* dataSVG);
 
@@ -102,14 +101,14 @@ public:
 
 private: 
     Memoire24CXXX memoire; 
-    uint8_t data[SIZE_DATA]; //fait
-    uint8_t numberOfPoints = 0;  //fait
+    uint8_t data[SIZE_DATA] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0,0,0,0,0,0,0,1,0,0}; //fait
+    uint8_t numberOfPoints = 5;  //fait
     CustomPair arrayOfPairs[8]; 
     uint8_t compteurPair = 0;
     CustomPair hull[8];
     uint8_t nElementsHull = 0; 
-    float xInit = 191;
-    float yInit = 123;
+    uint16_t xInit = 191;
+    uint16_t yInit = 123;
     uint32_t compteurData = 0; 
     bool fini = false;
     uint32_t crc = 0xFFFFFFFF;

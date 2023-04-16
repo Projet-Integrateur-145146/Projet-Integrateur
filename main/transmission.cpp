@@ -13,11 +13,13 @@ Transmission::Transmission() {
     memoire.ecriture(0, motEcrit, 32);    
 */
     // On fait la lecture de EEPROM et on remplie data 
+    /*
     memoire.lecture(0, data, 32);
     for (uint8_t i = 0; i < 32; i++) {
        if (data[i] == 1)
            numberOfPoints++;
     }
+    */
 }
 
 float Transmission::returnValue(CustomPair p1, CustomPair p2, CustomPair p) {
@@ -36,7 +38,7 @@ float Transmission::findSide(CustomPair p1, CustomPair p2, CustomPair p)
 // Renvoie une valeur proportionnelle à la distance
 // entre le point p et la ligne reliant les
 // points p1 et p2
-uint16_t Transmission::lineDist(CustomPair p1, CustomPair p2, CustomPair p)
+float Transmission::lineDist(CustomPair p1, CustomPair p2, CustomPair p)
 {
     return fabs(returnValue(p1, p2, p));
 }
@@ -51,15 +53,15 @@ bool Transmission::checkIfExist(CustomPair hull[], CustomPair p) {
     return false; 
 }
 
-void Transmission::quickHull(CustomPair a[], uint8_t n, CustomPair p1, CustomPair p2, int8_t side)
+void Transmission::quickHull(CustomPair a[], uint8_t n, CustomPair p1, CustomPair p2, int16_t side)
 {
     int8_t ind = -1;
-    float max_dist = 0;
+    int16_t max_dist = 0;
     
     // Trouve le point avec la distance maximum
     for (uint8_t i=0; i<n; i++)
     {
-        uint16_t temp = lineDist(p1, p2, a[i]);
+        float temp = lineDist(p1, p2, a[i]);
         if (findSide(p1, p2, a[i]) == side && temp > max_dist)
         {
             ind = i;
@@ -106,8 +108,8 @@ void Transmission::printHull(CustomPair a[], uint8_t n)
 
 // Calcule la position sur l'image 
 void Transmission::calculatePos(uint8_t index) {
-    float posX = index % 8; 
-    float posY = index / 8;  
+    int16_t posX = index % 8; 
+    int16_t posY = index / 8;  
     CustomPair t;
     t.first = xInit + (GAP_CIRCLES_X * (posX)); 
     t.second = HEIGHT - (yInit + (GAP_CIRCLES_X * (posY))); 
@@ -124,8 +126,8 @@ void Transmission::findPos() {
 
 // Permet de trouver le barycentre de tout les points
 CustomPair Transmission::getBarycenter() {
-    float sumX = 0;
-    float sumY = 0; 
+    uint16_t sumX = 0;
+    uint16_t sumY = 0; 
 
     for (uint8_t i = 0; i <= nElementsHull; i++) {
         sumX += hull[i].first; 
@@ -139,12 +141,12 @@ CustomPair Transmission::getBarycenter() {
 }
 
 // Permet d'avoir l'angle d'un point par rapport au barycentre
-float Transmission::getAngle(CustomPair point, CustomPair barycenter) {
+int16_t Transmission::getAngle(CustomPair point, CustomPair barycenter) {
     CustomPair t;
     t.first = (point.first - barycenter.first); 
     t.second = (point.second - barycenter.second);  
 
-    float angle = (atan2f(t.second, t.first) * 180 / M_PI);
+    int16_t angle = (atan2f(t.second, t.first) * 180 / M_PI);
     angle+=(angle<0)*360 ;
     return angle;
 }    
@@ -195,9 +197,9 @@ void Transmission::generateCircles() {
 
 // Dessine des carrés sur le SVG
 void Transmission::generateSquares() {
-    float posY = yInit; 
+    int16_t posY = yInit; 
     for (uint8_t i = 0; i < 4; i++) {
-        float posX = xInit;
+        int16_t posX = xInit;
         for (uint8_t j = 0; j < 8; j++){
             transmissionTableau("<rect x=\""); 
             transmettreFloat(posX);
@@ -215,7 +217,7 @@ void Transmission::generateHeader() {
     transmissionTableau("<svg width=\"100%\" height=\"100%\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 1152 576\"> <rect x=\"96\" y=\"48\" width=\"960\" height=\"480\" stroke=\"black\" stroke-width=\"1\" fill=\"white\"/>"); 
 }
 
-float Transmission::getAire() {
+uint16_t Transmission::getAire() {
     float S1 = 0, S2 = 0;
 
     // Calculate S1 and S2
@@ -224,34 +226,21 @@ float Transmission::getAire() {
         S1 += hull[i].first * hull[j].second;
         S2 += hull[i].second * hull[j].first;
     }
-
-    // Aire
-    float airePixel = 0.5 * fabs(S1 - S2);
-    float pixel_size_x = 1 / 10.0; 
-    float pixel_size_y = 1 / 10.0; 
-    return airePixel * pixel_size_x * pixel_size_y; 
+    return 0.5 * fabs(S1 - S2) * 0.1 * 0.1; 
 } 
 
 // Genere la fin du SVG
 void Transmission::generateEnd() {
-    float aire = getAire(); 
+    uint16_t aire = getAire(); 
     transmissionTableau("<text x=\"96\" y=\"36\" font-family=\"arial\" font-size=\"20\" fill=\"blue\">section 06 -- equipe 145146 -- VROUMY</text>");     
     transmissionTableau("<text x=\"96\" y=\"552\" font-family=\"arial\" font-size=\"20\" fill=\"blue\"> AIRE: "); 
     transmettreFloat(aire);
     transmissionTableau(" pouces carres</text> </svg>"); 
 }
 
-void Transmission::transmettreFloat(float value) {
-    uint16_t integerPart = (uint16_t)value;
-    uint16_t decimalPart = fabs((uint16_t)((value - integerPart) * 100));
-
-    // Envoyer l'integer au UART
-    for (uint16_t i = 1000; i > 0; i /= 10) {
-        transmissionAndUpdtateCRC('0' + ((integerPart / i) % 10));
-    }
-    transmissionAndUpdtateCRC('.');
-    for (uint8_t i = 10; i > 0; i /= 10) {
-        transmissionAndUpdtateCRC('0' + ((decimalPart / i) % 10));
+void Transmission::transmettreFloat(uint16_t value) {
+    for (uint32_t i = 10000; i > 0; i /= 10) {
+        transmissionAndUpdtateCRC('0' + ((value / i) % 10));
     }
 }
 
