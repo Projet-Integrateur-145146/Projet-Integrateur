@@ -3,11 +3,11 @@
 Transmission::Transmission() {
     memoire.initialisationUART();    
 
-    uint8_t motEcrit[32] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    motEcrit[11] = 1; 
-    motEcrit[13] = 1; 
-    motEcrit[18] = 1; 
-    motEcrit[29] = 1; 
+    //uint8_t motEcrit[32] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    //motEcrit[11] = 1; 
+    //motEcrit[13] = 1; 
+    //motEcrit[18] = 1; 
+    //motEcrit[29] = 1; 
     memoire.ecriture(0, motEcrit, 32);    
 
     // On fait la lecture de EEPROM et on remplie data 

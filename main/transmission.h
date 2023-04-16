@@ -21,6 +21,7 @@
 #define BITSHIFT 1
 #define OFFSET_PIXELS 110
 
+
 struct CustomPair {
     float first;
     float second;
