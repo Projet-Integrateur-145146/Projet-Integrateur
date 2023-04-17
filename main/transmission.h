@@ -8,8 +8,8 @@
 
 #define F_CPU 8000000UL
 #define M_PI 3.14159265358979323846
+#define SIZE_DATA 32
 
-const uint8_t SIZE_DATA = 32;
 const uint8_t GAP_CIRCLES_X = 110;
 const uint16_t HEIGHT = 576;
 const uint32_t POLYNOME = 0xEDB88320;
@@ -21,8 +21,8 @@ const uint8_t NB_BYTES_CRC = 8;
 const uint8_t BITSHIFT = 1;
 
 struct CustomPair {
-    uint16_t first;
-    uint16_t second;
+    float first;
+    float second;
 
     friend bool operator==(const CustomPair a, const CustomPair b) {
         return a.first == b.first && a.second == b.second;
@@ -40,11 +40,12 @@ class Transmission
 public: 
     Transmission();
 
-    void grahamScan(CustomPair points[], uint8_t n, CustomPair hull[], uint8_t &hullSize);
-    int16_t crossProduct(CustomPair &O, CustomPair &A, CustomPair &B);
-    void swapCustomPair(CustomPair &a, CustomPair &b);
-    int32_t squaredDistance(CustomPair &a, CustomPair &b);
-    bool comparePolarAngles(CustomPair &a, CustomPair &b, CustomPair &p0);
+    int orientation(const CustomPair& O, const CustomPair& A, const CustomPair& B);
+    float distanceSquared(const CustomPair &p1, const CustomPair &p2);
+    bool comparePoints(const CustomPair &p1, const CustomPair &p2);
+    void swap(CustomPair &p1, CustomPair &p2);
+    void sortPoints(CustomPair arr[], uint8_t n);
+    void convexHull();
 
     void calculatePos(uint8_t index);
     void findPos();
@@ -53,7 +54,7 @@ public:
     CustomPair getBarycenter();
 
     // Permet d'avoir l'angle d'un point par rapport au barycentre
-    int16_t getAngle(CustomPair point, CustomPair barycenter); 
+    float getAngle(CustomPair point, CustomPair barycenter); 
 
     void sortList();
 
@@ -87,15 +88,15 @@ public:
 
 private: 
     Memoire24CXXX memoire; 
-    uint8_t data[SIZE_DATA] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0,0,0,0,0,0,0,1,0,0}; //fait
-    uint8_t numberOfPoints = 5;  //fait
+    uint8_t data[SIZE_DATA] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0,0,0,0,0,0,1,0,0,0}; //fait
+    uint8_t numberOfPoints = 6;  //fait
     CustomPair arrayOfPairs[8]; 
     uint8_t compteurPair = 0;
     CustomPair hull[8];
-    uint8_t nElementsHull = 0; 
+    int nElementsHull = 0; 
     uint16_t xInit = 191;
     uint16_t yInit = 123;
-    uint32_t compteurData = 0; 
     bool fini = false;
+    CustomPair bottomMostPoint;
     uint32_t crc = 0xFFFFFFFF;
 };

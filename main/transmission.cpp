@@ -22,74 +22,77 @@ Transmission::Transmission() {
     */
 }
 
-int16_t Transmission::crossProduct(CustomPair &O, CustomPair &A, CustomPair &B) {
+int Transmission::orientation(const CustomPair& O, const CustomPair& A, const CustomPair& B)
+{
     return (A.first - O.first) * (B.second - O.second) - (A.second - O.second) * (B.first - O.first);
 }
 
-void Transmission::swapCustomPair(CustomPair &a, CustomPair &b) {
-    CustomPair temp = a;
-    a = b;
-    b = temp;
+float Transmission::distanceSquared(const CustomPair &p1, const CustomPair &p2) {
+    return powf(p1.first - p2.first, 2) + powf(p1.second - p2.second, 2);
 }
 
-int32_t Transmission::squaredDistance(CustomPair &a, CustomPair &b) {
-    int16_t dx = a.first - b.first;
-    int16_t dy = a.second - b.second;
-    return dx * dx + dy * dy;
-}
-
-bool Transmission::comparePolarAngles(CustomPair &a, CustomPair &b, CustomPair &p0) {
-    int16_t cp = crossProduct(p0, a, b);
-    if (cp == 0) {
-        return squaredDistance(p0, a) <= squaredDistance(p0, b);
+// Comparator function to sort points based on their polar angle with respect to the bottom-most point
+bool Transmission::comparePoints(const CustomPair &p1, const CustomPair &p2) {
+    int16_t o = orientation(bottomMostPoint, p1, p2);
+    if (o == 0) {
+        return distanceSquared(bottomMostPoint, p1) < distanceSquared(bottomMostPoint, p2);
     }
-    return cp > 0;
+    return o > 0;
 }
 
-void Transmission::grahamScan(CustomPair points[], uint8_t n, CustomPair hull[], uint8_t &hullSize) {
-    // Find the lowest point
-    uint8_t minYIndex = 0;
-    for (uint8_t i = 1; i < n; i++) {
-        if (points[i].second < points[minYIndex].second || (points[i].second == points[minYIndex].second && points[i].first < points[minYIndex].first)) {
-            minYIndex = i;
-        }
-    }
+// Swap two CustomPair objects
+void Transmission::swap(CustomPair &p1, CustomPair &p2) {
+    CustomPair temp = p1;
+    p1 = p2;
+    p2 = temp;
+}
 
-    // Swap the lowest point with the first element
-    swapCustomPair(points[0], points[minYIndex]);
-
-    // Sort the remaining points based on their polar angles with respect to the lowest point
-    CustomPair p0 = points[0];
-    for (uint8_t i = 1; i < n - 1; i++) {
-        uint8_t minIndex = i;
-        for (uint8_t j = i + 1; j < n; j++) {
-            if (comparePolarAngles(points[j], points[minIndex], p0)) {
-                minIndex = j;
+// Bubble sort with custom comparator
+void Transmission::sortPoints(CustomPair arr[], uint8_t n) {
+    for (uint8_t i = 0; i < n - 1; i++) {
+        for (uint8_t j = 0; j < n - i - 1; j++) {
+            if (!comparePoints(arr[j], arr[j + 1])) {
+                swap(arr[j], arr[j + 1]);
             }
         }
-        swapCustomPair(points[i], points[minIndex]);
     }
+}
 
-    // Initialize the convex hull with the first three points
-    hullSize = 0;
-    hull[hullSize++] = points[0];
-    hull[hullSize++] = points[1];
-    hull[hullSize++] = points[2];
-
-    // Process the remaining points
-    for (uint8_t i = 3; i < n; i++) {
-        // Remove points from the hull while they make a non-left turn
-        while (hullSize > 1 && crossProduct(hull[hullSize - 2], hull[hullSize - 1], points[i]) <= 0) {
-            hullSize--;
+void Transmission::convexHull() {
+    // Find the bottom-most point
+    uint8_t bottomMostIndex = 0;
+    for (uint8_t i = 1; i < numberOfPoints; i++) {
+        if (arrayOfPairs[i].second < arrayOfPairs[bottomMostIndex].second ||
+            (arrayOfPairs[i].second == arrayOfPairs[bottomMostIndex].second &&
+             arrayOfPairs[i].first < arrayOfPairs[bottomMostIndex].first)) {
+            bottomMostIndex = i;
         }
-        hull[hullSize++] = points[i];
     }
+    bottomMostPoint = arrayOfPairs[bottomMostIndex];
+
+    // Swap the bottom-most point with the first point in the array
+    swap(arrayOfPairs[0], arrayOfPairs[bottomMostIndex]);
+
+    // Sort the points based on their polar angle with respect to the bottom-most point
+    sortPoints(arrayOfPairs + 1, numberOfPoints - 1);
+
+    // Initialize the hull with the first 3 points
+    uint8_t m = 3;
+    for (uint8_t i = 3; i < numberOfPoints; i++) {
+        // Remove points that form a clockwise turn
+        while (m > 1 && orientation(hull[m - 2], hull[m - 1], arrayOfPairs[i]) <= 0) {
+            m--;
+        }
+        hull[m++] = arrayOfPairs[i];
+    }
+
+    nElementsHull = m;
 }
 
 // Calcule la position sur l'image 
 void Transmission::calculatePos(uint8_t index) {
-    int16_t posX = index % 8; 
-    int16_t posY = index / 8;  
+    uint8_t posX = index % 8; 
+    uint8_t posY = index / 8;  
     CustomPair t;
     t.first = xInit + (GAP_CIRCLES_X * (posX)); 
     t.second = HEIGHT - (yInit + (GAP_CIRCLES_X * (posY))); 
@@ -121,12 +124,12 @@ CustomPair Transmission::getBarycenter() {
 }
 
 // Permet d'avoir l'angle d'un point par rapport au barycentre
-int16_t Transmission::getAngle(CustomPair point, CustomPair barycenter) {
+float Transmission::getAngle(CustomPair point, CustomPair barycenter) {
     CustomPair t;
     t.first = (point.first - barycenter.first); 
     t.second = (point.second - barycenter.second);  
 
-    int16_t angle = (atan2f(t.second, t.first) * 180 / M_PI);
+    float angle = (atan2f(t.second, t.first) * 180 / M_PI);
     angle+=(angle<0)*360 ;
     return angle;
 }    
@@ -269,8 +272,7 @@ void Transmission::generateSVG() {
     memoire.transmissionUART(DEBUT); 
     findPos(); 
     generateHeader(); 
-    //printHull(arrayOfPairs, numberOfPoints);
-    grahamScan(arrayOfPairs, numberOfPoints, hull, nElementsHull);
+    convexHull();
     generateLines(); 
     generateSquares(); 
     generateCircles();
