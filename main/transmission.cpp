@@ -22,71 +22,53 @@ Transmission::Transmission() {
     */
 }
 
-int Transmission::orientation(const CustomPair& O, const CustomPair& A, const CustomPair& B)
-{
-    return (A.first - O.first) * (B.second - O.second) - (A.second - O.second) * (B.first - O.first);
-}
-
-float Transmission::distanceSquared(const CustomPair &p1, const CustomPair &p2) {
-    return powf(p1.first - p2.first, 2) + powf(p1.second - p2.second, 2);
-}
-
-// Comparator function to sort points based on their polar angle with respect to the bottom-most point
-bool Transmission::comparePoints(const CustomPair &p1, const CustomPair &p2) {
-    int16_t o = orientation(bottomMostPoint, p1, p2);
-    if (o == 0) {
-        return distanceSquared(bottomMostPoint, p1) < distanceSquared(bottomMostPoint, p2);
+uint8_t Transmission::convexOrientation(const CustomPair &pointQ, const CustomPair &pointR, const CustomPair &pointS) {
+    int32_t val = (pointR.second - pointQ.second) * (pointS.first - pointR.first) -
+              (pointR.first - pointQ.first) * (pointS.second - pointR.second);
+    if (val == 0) {
+        return 0;
     }
-    return o > 0;
+    return (val > 0) ? 1 : 2;
 }
 
-// Swap two CustomPair objects
-void Transmission::swap(CustomPair &p1, CustomPair &p2) {
-    CustomPair temp = p1;
-    p1 = p2;
-    p2 = temp;
-}
+void Transmission::placeSVGPolygon(uint8_t nbOfPolesDetected) {
+    // Jarvis March algorithm
+    //CustomPair convexHull[nbOfPolesDetected];
 
-// Bubble sort with custom comparator
-void Transmission::sortPoints(CustomPair arr[], uint8_t n) {
-    for (uint8_t i = 0; i < n - 1; i++) {
-        for (uint8_t j = 0; j < n - i - 1; j++) {
-            if (!comparePoints(arr[j], arr[j + 1])) {
-                swap(arr[j], arr[j + 1]);
-            }
+    uint8_t leftmostIndex = 0;
+    for (uint8_t i = 1; i < nbOfPolesDetected; i++) {
+        if (arrayOfPairs[i].first < arrayOfPairs[leftmostIndex].first)
+            leftmostIndex = i;
+    }
+    uint8_t p = leftmostIndex;
+    uint8_t q = 0;
+    uint8_t hullIndex = 0;
+    do {
+        hull[hullIndex++] = arrayOfPairs[p];
+        q = (p + 1) % nbOfPolesDetected;
+        for (uint8_t i = 0; i < nbOfPolesDetected; i++) {
+            if (convexOrientation(arrayOfPairs[p], arrayOfPairs[i], arrayOfPairs[q]) == 2)
+                q = i;
         }
-    }
-}
+        p = q;
+    } while (p != leftmostIndex);
+    //CustomPair convexHullFinal[hullIndex];
+    //for (uint8_t i = 0; i < hullIndex; i++)
+    //    convexHullFinal[i] = convexHull[i];
+    // End of the algorithm
 
-void Transmission::convexHull() {
-    // Find the bottom-most point
-    uint8_t bottomMostIndex = 0;
-    for (uint8_t i = 1; i < numberOfPoints; i++) {
-        if (arrayOfPairs[i].second < arrayOfPairs[bottomMostIndex].second ||
-            (arrayOfPairs[i].second == arrayOfPairs[bottomMostIndex].second &&
-             arrayOfPairs[i].first < arrayOfPairs[bottomMostIndex].first)) {
-            bottomMostIndex = i;
-        }
-    }
-    bottomMostPoint = arrayOfPairs[bottomMostIndex];
+    /*
+    for (uint8_t i = 0; i < hullIndex; i++) {
+        int32_t xValue = convexHullFinal[i].first;
+        int32_t yValue = convexHullFinal[i].second;
+        CustomPair t; 
+        t.first = xValue; 
+        t.second = yValue; 
+        hull[i] = t;
+    }*/
 
-    // Swap the bottom-most point with the first point in the array
-    swap(arrayOfPairs[0], arrayOfPairs[bottomMostIndex]);
-
-    // Sort the points based on their polar angle with respect to the bottom-most point
-    sortPoints(arrayOfPairs + 1, numberOfPoints - 1);
-
-    // Initialize the hull with the first 3 points
-    uint8_t m = 3;
-    for (uint8_t i = 3; i < numberOfPoints; i++) {
-        // Remove points that form a clockwise turn
-        while (m > 1 && orientation(hull[m - 2], hull[m - 1], arrayOfPairs[i]) <= 0) {
-            m--;
-        }
-        hull[m++] = arrayOfPairs[i];
-    }
-
-    nElementsHull = m;
+    // End of the algorithm
+    nElementsHull = hullIndex;
 }
 
 // Calcule la position sur l'image 
@@ -138,13 +120,16 @@ float Transmission::getAngle(CustomPair point, CustomPair barycenter) {
 void Transmission::sortList() {
     CustomPair barycenter = getBarycenter();
     for (uint8_t i = 0; i < nElementsHull; i++) {
-        for (uint8_t j = i; j < nElementsHull; j++) {
-            if (getAngle(hull[i], barycenter) > getAngle(hull[j], barycenter)) {
-                CustomPair tempPoint = hull[i]; 
-                hull[i] = hull[j]; 
-                hull[j] = tempPoint;
-                break;  
+        uint8_t minIndex = i;
+        for (uint8_t j = i + 1; j < nElementsHull; j++) {
+            if (getAngle(hull[minIndex], barycenter) > getAngle(hull[j], barycenter)) {
+                minIndex = j;
             }
+        }
+        if (minIndex != i) {
+            CustomPair tempPoint = hull[i];
+            hull[i] = hull[minIndex];
+            hull[minIndex] = tempPoint;
         }
     }
 }
@@ -272,7 +257,7 @@ void Transmission::generateSVG() {
     memoire.transmissionUART(DEBUT); 
     findPos(); 
     generateHeader(); 
-    convexHull();
+    placeSVGPolygon(numberOfPoints);
     generateLines(); 
     generateSquares(); 
     generateCircles();

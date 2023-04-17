@@ -21,8 +21,8 @@ const uint8_t NB_BYTES_CRC = 8;
 const uint8_t BITSHIFT = 1;
 
 struct CustomPair {
-    float first;
-    float second;
+    int32_t first;
+    int32_t second;
 
     friend bool operator==(const CustomPair a, const CustomPair b) {
         return a.first == b.first && a.second == b.second;
@@ -40,12 +40,8 @@ class Transmission
 public: 
     Transmission();
 
-    int orientation(const CustomPair& O, const CustomPair& A, const CustomPair& B);
-    float distanceSquared(const CustomPair &p1, const CustomPair &p2);
-    bool comparePoints(const CustomPair &p1, const CustomPair &p2);
-    void swap(CustomPair &p1, CustomPair &p2);
-    void sortPoints(CustomPair arr[], uint8_t n);
-    void convexHull();
+    uint8_t convexOrientation(const CustomPair &pointQ, const CustomPair &pointR, const CustomPair &pointS);
+    void placeSVGPolygon(uint8_t nbOfPolesDetected);
 
     void calculatePos(uint8_t index);
     void findPos();
@@ -88,12 +84,12 @@ public:
 
 private: 
     Memoire24CXXX memoire; 
-    uint8_t data[SIZE_DATA] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0,0,0,0,0,0,1,0,0,0}; //fait
-    uint8_t numberOfPoints = 6;  //fait
+    uint8_t data[SIZE_DATA] = {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0,0,0,0,0,0,1,0,0,0}; //fait
+    uint8_t numberOfPoints = 5;  //fait
     CustomPair arrayOfPairs[8]; 
     uint8_t compteurPair = 0;
     CustomPair hull[8];
-    int nElementsHull = 0; 
+    uint8_t nElementsHull = 0; 
     uint16_t xInit = 191;
     uint16_t yInit = 123;
     bool fini = false;
