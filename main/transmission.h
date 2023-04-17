@@ -40,8 +40,8 @@ class Transmission
 public: 
     Transmission();
 
-    uint8_t convexOrientation(const CustomPair &pointQ, const CustomPair &pointR, const CustomPair &pointS);
-    void placeSVGPolygon(uint8_t nbOfPolesDetected);
+    uint8_t orientation(const CustomPair &pointQ, const CustomPair &pointR, const CustomPair &pointS);
+    void JARVIS();
 
     void calculatePos(uint8_t index);
     void findPos();
@@ -84,11 +84,11 @@ public:
 
 private: 
     Memoire24CXXX memoire; 
-    uint8_t data[SIZE_DATA] = {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0,0,0,0,0,0,1,0,0,0}; //fait
-    uint8_t numberOfPoints = 5;  //fait
-    CustomPair arrayOfPairs[8]; 
+    uint8_t data[SIZE_DATA]; //fait
+    uint8_t numberOfPoints = 0;  //fait
+    CustomPair arrayOfPairs[10]; 
     uint8_t compteurPair = 0;
-    CustomPair hull[8];
+    CustomPair hull[10];
     uint8_t nElementsHull = 0; 
     uint16_t xInit = 191;
     uint16_t yInit = 123;

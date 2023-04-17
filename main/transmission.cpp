@@ -3,26 +3,28 @@
 Transmission::Transmission() {
     memoire.initialisationUART();    
 
-/*
-    uint8_t motEcrit[32] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    motEcrit[11] = 1; 
-    motEcrit[13] = 1; 
-    motEcrit[18] = 1; 
-   motEcrit[19] = 1;
-    motEcrit[29] = 1; 
-    memoire.ecriture(0, motEcrit, 32);    
-*/
-    // On fait la lecture de EEPROM et on remplie data 
-    /*
+
+    //uint8_t motEcrit[32] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    /*data[11] = 1; 
+    data[13] = 1; 
+    data[18] = 1; 
+    data[19] = 1;
+    data[29] = 1; 
+    data[0] = 1; 
+    data[31] = 1; 
+    data[16] = 1;
+    numberOfPoints = 8;*/
+    //memoire.ecriture(0, motEcrit, 32);    
+    // On fait la lecture de EEPROM et on remplie data
     memoire.lecture(0, data, 32);
     for (uint8_t i = 0; i < 32; i++) {
        if (data[i] == 1)
            numberOfPoints++;
     }
-    */
 }
 
-uint8_t Transmission::convexOrientation(const CustomPair &pointQ, const CustomPair &pointR, const CustomPair &pointS) {
+// Algorithme tiré de https://www.geeksforgeeks.org/convex-hull-using-jarvis-algorithm-or-wrapping/
+uint8_t Transmission::orientation(const CustomPair &pointQ, const CustomPair &pointR, const CustomPair &pointS) {
     int32_t val = (pointR.second - pointQ.second) * (pointS.first - pointR.first) -
               (pointR.first - pointQ.first) * (pointS.second - pointR.second);
     if (val == 0) {
@@ -31,44 +33,23 @@ uint8_t Transmission::convexOrientation(const CustomPair &pointQ, const CustomPa
     return (val > 0) ? 1 : 2;
 }
 
-void Transmission::placeSVGPolygon(uint8_t nbOfPolesDetected) {
-    // Jarvis March algorithm
-    //CustomPair convexHull[nbOfPolesDetected];
-
-    uint8_t leftmostIndex = 0;
-    for (uint8_t i = 1; i < nbOfPolesDetected; i++) {
-        if (arrayOfPairs[i].first < arrayOfPairs[leftmostIndex].first)
-            leftmostIndex = i;
+void Transmission::JARVIS() {
+    uint8_t l = 0;
+    for (uint8_t i = 1; i < numberOfPoints; i++) {
+        if (arrayOfPairs[i].first < arrayOfPairs[l].first)
+            l = i;
     }
-    uint8_t p = leftmostIndex;
+    uint8_t p = l;
     uint8_t q = 0;
-    uint8_t hullIndex = 0;
     do {
-        hull[hullIndex++] = arrayOfPairs[p];
-        q = (p + 1) % nbOfPolesDetected;
-        for (uint8_t i = 0; i < nbOfPolesDetected; i++) {
-            if (convexOrientation(arrayOfPairs[p], arrayOfPairs[i], arrayOfPairs[q]) == 2)
+        hull[nElementsHull++] = arrayOfPairs[p];
+        q = (p + 1) % numberOfPoints;
+        for (uint8_t i = 0; i < numberOfPoints; i++) {
+            if (orientation(arrayOfPairs[p], arrayOfPairs[i], arrayOfPairs[q]) == 2)
                 q = i;
         }
         p = q;
-    } while (p != leftmostIndex);
-    //CustomPair convexHullFinal[hullIndex];
-    //for (uint8_t i = 0; i < hullIndex; i++)
-    //    convexHullFinal[i] = convexHull[i];
-    // End of the algorithm
-
-    /*
-    for (uint8_t i = 0; i < hullIndex; i++) {
-        int32_t xValue = convexHullFinal[i].first;
-        int32_t yValue = convexHullFinal[i].second;
-        CustomPair t; 
-        t.first = xValue; 
-        t.second = yValue; 
-        hull[i] = t;
-    }*/
-
-    // End of the algorithm
-    nElementsHull = hullIndex;
+    } while (p != l);
 }
 
 // Calcule la position sur l'image 
@@ -257,7 +238,7 @@ void Transmission::generateSVG() {
     memoire.transmissionUART(DEBUT); 
     findPos(); 
     generateHeader(); 
-    placeSVGPolygon(numberOfPoints);
+    JARVIS();
     generateLines(); 
     generateSquares(); 
     generateCircles();
