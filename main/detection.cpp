@@ -145,11 +145,21 @@ bool Detection::findPole(){
     uint8_t pos = PA3;
     value = can_.lecture(pos);
     value = value >> NOT_SIGNIFICANT_BITS;
-    if ((value >= MIN_VALUE_TWO_DIAGONAL)){
-        if (isOnTable()){
-            return true;
-        }
+    if (isFacingDiagonal_){
+        if ((value >= MIN_VALUE_TWO_DIAGONAL)){
+            if (isOnTable()){
+                return true;
+            }
 
+        }
+    }
+    else{
+        if ((value >= MIN_VALUE_TWO_HORIZONTAL)){
+            if (isOnTable()){
+                return true;
+            }
+
+        }
     }
     return false;
 }
@@ -227,10 +237,10 @@ bool Detection::turn45Right(){
     wheels_.ajustPWM(WHEELS_FAST,WHEELS_FAST);
     while (numberOfTimes < NUMBER_READINGS_PREVIOUS_FACING_DIRECTION){
         if (findPole()){
-            if (isOnTable()){
+            //if (isOnTable()){
                 wheels_.ajustPWM(WHEELS_OFF, WHEELS_OFF);
                 return true;
-            }
+            //}
         }
         _delay_ms(DELAY_BETWEEN_READINGS);
         numberOfTimes++;
@@ -243,6 +253,7 @@ bool Detection::turn45Right(){
     else{
         facingDirection_++;
     }
+    isFacingDiagonal_ = !isFacingDiagonal_;
     
     while (numberOfTimes < NUMBER_READINGS_CURRENT_FACING_DIRECTION){
         if (findPole()){
@@ -335,9 +346,9 @@ void Detection::searchPole(){
     // Trouve Pole - Doit retourner la distance au pole (1 ou 2)
     uint8_t poleDistance = findPolePosition();
     uint16_t increment = 0;
-    while ((poleDistance == NO_POLE_FOUND) && (increment < 1250) ){
+    while ((poleDistance == NO_POLE_FOUND) && (increment < 250) ){
         led_.turnLedAmber();
-        if (increment < 500){
+        if (increment < 75){
             wheels_.setBackwardLeft();
             wheels_.setForwardRight();
             wheels_.ajustPWM(50,50);
@@ -353,7 +364,7 @@ void Detection::searchPole(){
             poleDistance = findPolePosition();
             //wheels_.ajustPWM(WHEELS_OFF,WHEELS_OFF); 
         }
-        if (increment == 1249){
+        if (increment == 249){
             increment = 0;
         }
         increment++;
@@ -408,6 +419,7 @@ void Detection::executeDetectionState(){
             _delay_ms(1500);
             maxValueRead_ = 0;
             facingDirection_ = NORTH;
+            isFacingDiagonal_ = false;
             EIMSK &= ~(1 << INT2);
             searchPole();
             gButtonPressed = 0;

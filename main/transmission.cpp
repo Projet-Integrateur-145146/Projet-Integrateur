@@ -154,7 +154,10 @@ void Transmission::generateSquares() {
             transmettreFloat(posX);
             transmissionTableau("\" y=\"");  
             transmettreFloat(posY);
-            transmissionTableau("\" width=\"5\" height=\"5\" stroke=\"black\" stroke-width=\"1\" fill=\"black\"/>"); 
+            if (i == 3 && j == 0)
+                transmissionTableau("\" width=\"5\" height=\"5\" stroke=\"red\" stroke-width=\"1\" fill=\"red\"/>"); 
+            else 
+                transmissionTableau("\" width=\"5\" height=\"5\" stroke=\"black\" stroke-width=\"1\" fill=\"black\"/>"); 
             posX += GAP_CIRCLES_X;
         }
         posY += GAP_CIRCLES_X; 
