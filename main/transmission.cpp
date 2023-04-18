@@ -3,113 +3,59 @@
 Transmission::Transmission() {
     memoire.initialisationUART();    
 
-/*
-    uint8_t motEcrit[32] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    motEcrit[11] = 1; 
-    motEcrit[13] = 1; 
-    motEcrit[18] = 1; 
-   motEcrit[19] = 1;
-    motEcrit[29] = 1; 
-    memoire.ecriture(0, motEcrit, 32);    
-*/
-    // On fait la lecture de EEPROM et on remplie data 
-    /*
+
+    //uint8_t motEcrit[32] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    /*data[11] = 1; 
+    data[13] = 1; 
+    data[18] = 1; 
+    data[19] = 1;
+    data[29] = 1; 
+    data[0] = 1; 
+    data[31] = 1; 
+    data[16] = 1;
+    numberOfPoints = 8;*/
+    //memoire.ecriture(0, motEcrit, 32);    
+    // On fait la lecture de EEPROM et on remplie data
     memoire.lecture(0, data, 32);
     for (uint8_t i = 0; i < 32; i++) {
        if (data[i] == 1)
            numberOfPoints++;
     }
-    */
 }
 
-int16_t Transmission::returnValue(CustomPair p1, CustomPair p2, CustomPair p) {
-    return  (p.second - p1.second) * (p2.first - p1.first) -
-            (p2.second - p1.second) * (p.first - p1.first);
+// Algorithme tiré de https://www.geeksforgeeks.org/convex-hull-using-jarvis-algorithm-or-wrapping/
+uint8_t Transmission::orientation(const CustomPair &pointQ, const CustomPair &pointR, const CustomPair &pointS) {
+    int32_t val = (pointR.second - pointQ.second) * (pointS.first - pointR.first) -
+              (pointR.first - pointQ.first) * (pointS.second - pointR.second);
+    if (val == 0) {
+        return 0;
+    }
+    return (val > 0) ? 1 : 2;
 }
 
-// Renvoie le côté du point p par rapport à la ligne
-// reliant les points p1 et p2.
-int16_t Transmission::findSide(CustomPair p1, CustomPair p2, CustomPair p)
-{
-    int16_t val = returnValue(p1, p2, p);
-    return val > 0 ? 1 : (val < 0 ? -1 : 0);
-}
-    
-// Renvoie une valeur proportionnelle à la distance
-// entre le point p et la ligne reliant les
-// points p1 et p2
-int16_t Transmission::lineDist(CustomPair p1, CustomPair p2, CustomPair p)
-{
-    return fabs(returnValue(p1, p2, p));
-}
-    
-// Methode pour chercher si le point p existe dans le tableau 
-bool Transmission::checkIfExist(CustomPair hull[], CustomPair p) {
-    for (int i = 0; i < nElementsHull; i++) {
-            if (p == hull[i]) {
-                return true; 
-            }
+void Transmission::JARVIS() {
+    uint8_t l = 0;
+    for (uint8_t i = 1; i < numberOfPoints; i++) {
+        if (arrayOfPairs[i].first < arrayOfPairs[l].first)
+            l = i;
+    }
+    uint8_t p = l;
+    uint8_t q = 0;
+    do {
+        hull[nElementsHull++] = arrayOfPairs[p];
+        q = (p + 1) % numberOfPoints;
+        for (uint8_t i = 0; i < numberOfPoints; i++) {
+            if (orientation(arrayOfPairs[p], arrayOfPairs[i], arrayOfPairs[q]) == 2)
+                q = i;
         }
-    return false; 
-}
-
-void Transmission::quickHull(CustomPair a[], uint8_t n, CustomPair p1, CustomPair p2, int16_t side)
-{
-    int8_t ind = -1;
-    int16_t max_dist = 0;
-    
-    // Trouve le point avec la distance maximum
-    for (uint8_t i=0; i<n; i++)
-    {
-        int16_t temp = lineDist(p1, p2, a[i]);
-        if (findSide(p1, p2, a[i]) == side && temp > max_dist)
-        {
-            ind = i;
-            max_dist = temp;
-        }
-    }
-
-    if (ind == -1)
-    {
-        if (!checkIfExist(hull, p1)) 
-            hull[nElementsHull++] = p1; 
-        if (!checkIfExist(hull, p2))
-            hull[nElementsHull++] = p2;
-        return;
-    }
-
-    quickHull(a, n, a[ind], p1, -findSide(a[ind], p1, p2));
-    quickHull(a, n, a[ind], p2, -findSide(a[ind], p2, p1));
-}
-    
-// Implementation de https://en.wikipedia.org/wiki/Convex_hull_algorithms
-void Transmission::printHull(CustomPair a[], uint8_t n)
-{    
-    // Trouve les points avec les coord maximums
-    uint8_t min_x = 0, max_x = 0;
-    for (uint8_t i=1; i<n; i++)
-    {
-        if (a[i].first < a[min_x].first)
-            min_x = i;
-        if (a[i].first > a[max_x].first)
-            max_x = i;
-    }
-    
-    // Trouve récursivement les points de l'enveloppe convexe sur
-    // un côté de la ligne reliant a[min_x] et
-    // a[max_x]
-    quickHull(a, n, a[min_x], a[max_x], 1);
-    
-    // Trouve récursivement les points de l'enveloppe convexe sur
-    // l'autre côté de la ligne reliant a[min_x] et 
-    // a[max_x]
-    quickHull(a, n, a[min_x], a[max_x], -1);
+        p = q;
+    } while (p != l);
 }
 
 // Calcule la position sur l'image 
 void Transmission::calculatePos(uint8_t index) {
-    int16_t posX = index % 8; 
-    int16_t posY = index / 8;  
+    uint8_t posX = index % 8; 
+    uint8_t posY = index / 8;  
     CustomPair t;
     t.first = xInit + (GAP_CIRCLES_X * (posX)); 
     t.second = HEIGHT - (yInit + (GAP_CIRCLES_X * (posY))); 
@@ -141,12 +87,12 @@ CustomPair Transmission::getBarycenter() {
 }
 
 // Permet d'avoir l'angle d'un point par rapport au barycentre
-int16_t Transmission::getAngle(CustomPair point, CustomPair barycenter) {
+float Transmission::getAngle(CustomPair point, CustomPair barycenter) {
     CustomPair t;
     t.first = (point.first - barycenter.first); 
     t.second = (point.second - barycenter.second);  
 
-    int16_t angle = (atan2f(t.second, t.first) * 180 / M_PI);
+    float angle = (atan2f(t.second, t.first) * 180 / M_PI);
     angle+=(angle<0)*360 ;
     return angle;
 }    
@@ -155,13 +101,16 @@ int16_t Transmission::getAngle(CustomPair point, CustomPair barycenter) {
 void Transmission::sortList() {
     CustomPair barycenter = getBarycenter();
     for (uint8_t i = 0; i < nElementsHull; i++) {
-        for (uint8_t j = i; j < nElementsHull; j++) {
-            if (getAngle(hull[i], barycenter) > getAngle(hull[j], barycenter)) {
-                CustomPair tempPoint = hull[i]; 
-                hull[i] = hull[j]; 
-                hull[j] = tempPoint;
-                break;  
+        uint8_t minIndex = i;
+        for (uint8_t j = i + 1; j < nElementsHull; j++) {
+            if (getAngle(hull[minIndex], barycenter) > getAngle(hull[j], barycenter)) {
+                minIndex = j;
             }
+        }
+        if (minIndex != i) {
+            CustomPair tempPoint = hull[i];
+            hull[i] = hull[minIndex];
+            hull[minIndex] = tempPoint;
         }
     }
 }
@@ -217,8 +166,8 @@ void Transmission::generateHeader() {
     transmissionTableau("<svg width=\"100%\" height=\"100%\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 1152 576\"> <rect x=\"96\" y=\"48\" width=\"960\" height=\"480\" stroke=\"black\" stroke-width=\"1\" fill=\"white\"/>"); 
 }
 
-int16_t Transmission::getAire() {
-    int16_t S1 = 0, S2 = 0;
+uint16_t Transmission::getAire() {
+    float S1 = 0, S2 = 0;
 
     // Calculate S1 and S2
     for (uint8_t i = 0; i < nElementsHull; i++) {
@@ -226,24 +175,19 @@ int16_t Transmission::getAire() {
         S1 += hull[i].first * hull[j].second;
         S2 += hull[i].second * hull[j].first;
     }
-
-    // Aire
-    int16_t airePixel = 0.5 * fabs(S1 - S2);
-    int16_t pixel_size_x = 1 / 10.0; 
-    int16_t pixel_size_y = 1 / 10.0; 
-    return airePixel * pixel_size_x * pixel_size_y; 
+    return 0.5 * fabs(S1 - S2) * 0.1 * 0.1; 
 } 
 
 // Genere la fin du SVG
 void Transmission::generateEnd() {
-    int16_t aire = getAire(); 
+    float aire = getAire(); 
     transmissionTableau("<text x=\"96\" y=\"36\" font-family=\"arial\" font-size=\"20\" fill=\"blue\">section 06 -- equipe 145146 -- VROUMY</text>");     
     transmissionTableau("<text x=\"96\" y=\"552\" font-family=\"arial\" font-size=\"20\" fill=\"blue\"> AIRE: "); 
     transmettreFloat(aire);
     transmissionTableau(" pouces carres</text> </svg>"); 
 }
 
-void Transmission::transmettreFloat(int16_t value) {
+void Transmission::transmettreFloat(uint16_t value) {
     for (uint32_t i = 10000; i > 0; i /= 10) {
         transmissionAndUpdtateCRC('0' + ((value / i) % 10));
     }
@@ -294,7 +238,7 @@ void Transmission::generateSVG() {
     memoire.transmissionUART(DEBUT); 
     findPos(); 
     generateHeader(); 
-    printHull(arrayOfPairs, numberOfPoints);
+    JARVIS();
     generateLines(); 
     generateSquares(); 
     generateCircles();

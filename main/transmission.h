@@ -8,8 +8,8 @@
 
 #define F_CPU 8000000UL
 #define M_PI 3.14159265358979323846
+#define SIZE_DATA 32
 
-const uint8_t SIZE_DATA = 32;
 const uint8_t GAP_CIRCLES_X = 110;
 const uint16_t HEIGHT = 576;
 const uint32_t POLYNOME = 0xEDB88320;
@@ -21,8 +21,8 @@ const uint8_t NB_BYTES_CRC = 8;
 const uint8_t BITSHIFT = 1;
 
 struct CustomPair {
-    uint16_t first;
-    uint16_t second;
+    int32_t first;
+    int32_t second;
 
     friend bool operator==(const CustomPair a, const CustomPair b) {
         return a.first == b.first && a.second == b.second;
@@ -40,24 +40,8 @@ class Transmission
 public: 
     Transmission();
 
-    int16_t returnValue(CustomPair p1, CustomPair p2, CustomPair p);
-
-    // Returns the side of point p with respect to line
-    // joining points p1 and p2.
-    int16_t findSide(CustomPair p1, CustomPair p2, CustomPair p);
-        
-    // returns a value proportional to the distance
-    // between the point p and the line joining the
-    // points p1 and p2
-    int16_t lineDist(CustomPair p1, CustomPair p2, CustomPair p);
-
-    bool checkIfExist(CustomPair hull[], CustomPair p);
-
-    // End points of line L are p1 and p2. side can have value
-    // 1 or -1 specifying each of the parts made by the line L
-    void quickHull(CustomPair a[], uint8_t n, CustomPair p1, CustomPair p2, int16_t side);
-        
-    void printHull(CustomPair a[], uint8_t n);
+    uint8_t orientation(const CustomPair &pointQ, const CustomPair &pointR, const CustomPair &pointS);
+    void JARVIS();
 
     void calculatePos(uint8_t index);
     void findPos();
@@ -66,7 +50,7 @@ public:
     CustomPair getBarycenter();
 
     // Permet d'avoir l'angle d'un point par rapport au barycentre
-    int16_t getAngle(CustomPair point, CustomPair barycenter); 
+    float getAngle(CustomPair point, CustomPair barycenter); 
 
     void sortList();
 
@@ -83,12 +67,10 @@ public:
     // Generates the header of the svg file 
     void generateHeader();
 
-    int16_t getAire();
-
+    uint16_t getAire();
     // Generates the end of the svg file
     void generateEnd();
-
-    void transmettreFloat(int16_t value);
+    void transmettreFloat(uint16_t value);
 
     void transmissionTableau(const char* dataSVG);
 
@@ -102,15 +84,15 @@ public:
 
 private: 
     Memoire24CXXX memoire; 
-    uint8_t data[SIZE_DATA] = {0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0,0,0,0,0,0,0,0,0,0}; //fait
-    uint8_t numberOfPoints = 8;  //fait
-    CustomPair arrayOfPairs[8]; 
+    uint8_t data[SIZE_DATA]; //fait
+    uint8_t numberOfPoints = 0;  //fait
+    CustomPair arrayOfPairs[10]; 
     uint8_t compteurPair = 0;
-    CustomPair hull[8];
+    CustomPair hull[10];
     uint8_t nElementsHull = 0; 
     uint16_t xInit = 191;
     uint16_t yInit = 123;
-    uint32_t compteurData = 0; 
     bool fini = false;
+    CustomPair bottomMostPoint;
     uint32_t crc = 0xFFFFFFFF;
 };
