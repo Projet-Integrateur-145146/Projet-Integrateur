@@ -22,7 +22,7 @@ ISR(TIMER1_COMPA_vect) {
 void executeTransmission(Transmission& trans) {
     led.turnLedGreen();
     _delay_ms(2000); 
-    led.turnLedOff();  
+    led.turnLedOff();
     sei(); 
     timer.timerOneCTC1024(390); 
     trans.generateSVG();
@@ -32,7 +32,7 @@ void executeTransmission(Transmission& trans) {
 
 void executeDetection() {
     // Code pour execute la classe de detection 
-    //startDetecting();
+    startDetecting();
 }
 
 void executeINIT() {return ;}
@@ -71,7 +71,6 @@ int main(){
     DDRC &= ~(1<<PB2) & ~(1<<PC6);
 
     Transmission trans; 
-    //led.turnLedGreen();
 
     while (true) {
         switchState(robot);
